@@ -9,7 +9,7 @@ type UserRepositories interface {
 	FindAll() ([]models.User, error)
 	FindByID(id int) (*models.User, error)
 	FindByEmail(email string) (*models.User, error)
-	Create(user models.User) (*models.User, error)
+	Create(user models.User) (models.User, error)
 }
 
 type MemoryUserRepository struct {
@@ -61,6 +61,8 @@ func (r *MemoryUserRepository) Create(user models.User) (models.User, error) {
 	if user.Role == "" {
 		user.Role = "user"
 	}
+
 	r.users = append(r.users, user)
+
 	return user, nil
 }
