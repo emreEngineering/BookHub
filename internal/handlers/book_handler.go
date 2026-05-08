@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"BookHub/internal/responses"
 	"BookHub/internal/services"
 	"encoding/json"
 	"net/http"
@@ -20,25 +21,23 @@ func NewBookHandler(bookService services.BookServices) *BookHandler {
 }
 
 func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method == http.MethodPost {
 		var book models.Book
 
 		err := json.NewDecoder(r.Body).Decode(&book)
 		if err != nil {
-			http.Error(w, "Geçersiz JSON", http.StatusBadRequest)
+			responses.Error(w, http.StatusBadRequest, "Geçersiz JSON")
 			return
 		}
 
 		createdBook, err := h.bookService.CreateBook(book)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			responses.Error(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(createdBook)
+		responses.Success(w, http.StatusCreated, "Kitap oluşturuldu", createdBook)
 		return
 	}
 
@@ -66,12 +65,12 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 		updatedBook, err := h.bookService.UpdateBook(id, book)
 		if err != nil {
 			if err.Error() == "kitap bulunamadı" {
-				http.Error(w, err.Error(), http.StatusNotFound)
+				responses.Error(w, http.StatusNotFound, "Kitap bulunamadı")
 				return
 			}
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
-		json.NewEncoder(w).Encode(updatedBook)
+		responses.Success(w, http.StatusOK, "Kitap güncellendi", updatedBook)
 		return
 	}
 
@@ -94,12 +93,12 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		w.WriteHeader(http.StatusNoContent)
+		responses.Success(w, http.StatusOK, "Kitap silindi", nil)
 		return
 	}
 
 	if r.Method != http.MethodGet {
-		http.Error(w, "Bu endpoint sadece GET, POST, PUT ve DELETE destekler", http.StatusMethodNotAllowed)
+		responses.Error(w, http.StatusMethodNotAllowed, "Bu endpoint sadece GET, POST, PUT ve DELETE destekler")
 		return
 	}
 
@@ -118,7 +117,7 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		json.NewEncoder(w).Encode(book)
+		responses.Success(w, http.StatusOK, "Kitap getirildi", book)
 		return
 	}
 
@@ -128,5 +127,5 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(books)
+	responses.Success(w, http.StatusOK, "Kitaplar listelendi", books)
 }
