@@ -21,8 +21,6 @@ func NewBookHandler(bookService services.BookServices) *BookHandler {
 }
 
 func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	if r.Method == http.MethodPost {
 		var book models.Book
 
@@ -38,8 +36,7 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(createdBook)
+		responses.Success(w, http.StatusCreated, "Kitap oluşturuldu", createdBook)
 		return
 	}
 
@@ -73,7 +70,7 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 			responses.Error(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		json.NewEncoder(w).Encode(updatedBook)
+		responses.Success(w, http.StatusOK, "Kitap güncellendi", updatedBook)
 		return
 	}
 
@@ -96,7 +93,7 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		w.WriteHeader(http.StatusNoContent)
+		responses.Success(w, http.StatusOK, "Kitap silindi", nil)
 		return
 	}
 
@@ -120,7 +117,7 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		json.NewEncoder(w).Encode(book)
+		responses.Success(w, http.StatusOK, "Kitap getirildi", book)
 		return
 	}
 
@@ -130,5 +127,5 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(books)
+	responses.Success(w, http.StatusOK, "Kitaplar listelendi", books)
 }
