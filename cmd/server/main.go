@@ -12,9 +12,6 @@ import (
 	"net/http"
 )
 
-// bookRepo, bütün handler fonksiyonlarının kullanacağı ortak kitap deposudur.
-var bookRepo repositories.BookRepository
-
 // homeHandler, ana sayfa isteğine cevap verir.
 func homeHandler(w http.ResponseWriter, r *http.Request) {
 	// Kullanıcıya kısa bir çalışma mesajı gönderir.
@@ -35,8 +32,7 @@ func aboutHandler(w http.ResponseWriter, r *http.Request) {
 
 // main, uygulamanın başlangıç fonksiyonudur.
 func main() {
-	// Bellekte çalışan kitap deposunu oluşturur ve global değişkene atar.
-	bookRepo = repositories.NewMemoryBookRepository()
+	bookRepo := repositories.NewMemoryBookRepository()
 	bookHandler := handlers.NewBookHandler(bookRepo)
 
 	// Ana sayfa adresini homeHandler fonksiyonuna bağlar.
