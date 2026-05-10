@@ -1,6 +1,7 @@
 package main
 
 import (
+	"BookHub/internal/services"
 	"fmt"
 	"net/http"
 
@@ -22,7 +23,8 @@ func aboutHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	bookRepo := repositories.NewMemoryBookRepository()
-	bookHandler := handlers.NewBookHandler(bookRepo)
+	bookService := services.NewBookService(bookRepo)
+	bookHandler := handlers.NewBookHandler(bookService)
 
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/health", healthHandler)

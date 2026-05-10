@@ -7,16 +7,15 @@ import (
 	"strconv"
 
 	"BookHub/internal/models"
-	"BookHub/internal/repositories"
 )
 
 type BookHandler struct {
 	bookService services.BookServices
 }
 
-func NewBookHandler(bookRepo repositories.BookRepository) *BookHandler {
+func NewBookHandler(bookService services.BookServices) *BookHandler {
 	return &BookHandler{
-		bookService: services.NewBookService(bookRepo),
+		bookService: bookService,
 	}
 }
 
