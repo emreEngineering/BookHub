@@ -9,6 +9,7 @@ type BookRepository interface {
 	FindAll() ([]models.Book, error)
 	FindByID(id int) (*models.Book, error)
 	Create(book models.Book) (models.Book, error)
+	Update(id int, book models.Book) (models.Book, error)
 }
 
 type MemoryBookRepository struct {
@@ -48,4 +49,16 @@ func (r *MemoryBookRepository) Create(book models.Book) (models.Book, error) {
 	r.books = append(r.books, book)
 
 	return book, nil
+}
+
+func (r *MemoryBookRepository) Update(id int, book models.Book) (models.Book, error) {
+	for i, existingBook := range r.books {
+		if existingBook.ID == id {
+			book.ID = id
+			r.books[i] = book
+			return book, nil
+		}
+	}
+
+	return models.Book{}, errors.New("book not found")
 }

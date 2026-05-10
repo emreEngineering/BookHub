@@ -55,8 +55,47 @@ func booksHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.Method == http.MethodPut {
+		idParam := r.URL.Query().Get("id")
+		if idParam == "" {
+			http.Error(w, "Kitap ID zorunludur", http.StatusBadRequest)
+			return
+		}
+
+		id, err := strconv.Atoi(idParam)
+		if err != nil {
+			http.Error(w, "Gecersiz kitap ID", http.StatusBadRequest)
+			return
+		}
+
+		var book models.Book
+		if err := json.NewDecoder(r.Body).Decode(&book); err != nil {
+			http.Error(w, "Gecersiz JSON", http.StatusBadRequest)
+			return
+		}
+
+		if book.Title == "" {
+			http.Error(w, "Kitap adi bos olamaz", http.StatusBadRequest)
+			return
+		}
+
+		if book.Author == "" {
+			http.Error(w, "Yazar adi bos olamaz", http.StatusBadRequest)
+			return
+		}
+
+		updatedBook, err := bookRepo.Update(id, book)
+		if err != nil {
+			http.Error(w, "Kitap bulunamadi", http.StatusNotFound)
+			return
+		}
+
+		json.NewEncoder(w).Encode(updatedBook)
+		return
+	}
+
 	if r.Method != http.MethodGet {
-		http.Error(w, "Bu endpoint sadece GET ve POST destekler", http.StatusMethodNotAllowed)
+		http.Error(w, "Bu endpoint sadece GET, POST ve PUT destekler", http.StatusMethodNotAllowed)
 		return
 	}
 
