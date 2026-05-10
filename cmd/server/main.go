@@ -28,7 +28,9 @@ func main() {
 
 	userRepo := repositories.NewMemoryUserRepository()
 	userService := services.NewUserService(userRepo)
-	authHandler := handlers.NewAuthHandler(userService)
+	sessionService := services.NewSessionService()
+	authHandler := handlers.NewAuthHandler(userService, sessionService)
+
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/about", aboutHandler)

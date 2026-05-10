@@ -1,3 +1,5 @@
+# YAPAY ZEKA İLE ADIM ADIM GO ÖĞRENİYORUM
+
 # BookHub
 
 BookHub, Go ile yazılmış küçük bir backend projesidir. Projenin amacı kitap kayıtlarını yönetmek için sade bir HTTP CRUD API geliştirmek ve ilerleyen bölümlerde katmanlı mimari, standart response yapısı, authentication, template, database, cache, concurrency ve test konularını adım adım uygulamaktır.

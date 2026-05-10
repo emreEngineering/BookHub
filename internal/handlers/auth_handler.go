@@ -9,12 +9,14 @@ import (
 )
 
 type AuthHandler struct {
-	userService services.UserService
+	userService    services.UserService
+	sessionService services.SessionService
 }
 
-func NewAuthHandler(userService services.UserService) *AuthHandler {
+func NewAuthHandler(userService services.UserService, sessionService services.SessionService) *AuthHandler {
 	return &AuthHandler{
-		userService: userService,
+		userService:    userService,
+		sessionService: sessionService,
 	}
 }
 
@@ -60,5 +62,19 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		responses.Error(w, http.StatusUnauthorized, err.Error())
 		return
 	}
+
+	sessionID, err := h.sessionService.CreateSession(user.ID)
+	if err != nil {
+		responses.Error(w, http.StatusUnauthorized, err.Error())
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_id",
+		Value:    sessionID,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   3600,
+	})
 	responses.Success(w, http.StatusOK, "Giriş başarılı", user)
 }
