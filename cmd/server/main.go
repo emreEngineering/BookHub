@@ -4,6 +4,7 @@ import (
 	"BookHub/internal/repositories"
 	"fmt"
 	"net/http"
+	"strconv"
 )
 
 var bookRepo repositories.BookRepository
@@ -23,6 +24,24 @@ func aboutHandler(w http.ResponseWriter, r *http.Request) {
 func booksHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Bu endpoint sadece GET destekler", http.StatusMethodNotAllowed)
+		return
+	}
+
+	idParam := r.URL.Query().Get("id")
+	if idParam != "" {
+		id, err := strconv.Atoi(idParam)
+		if err != nil {
+			http.Error(w, "Gecersiz kitap ID", http.StatusBadRequest)
+			return
+		}
+
+		book, err := bookRepo.FindByID(id)
+		if err != nil {
+			http.Error(w, "Kitap bulunamadi", http.StatusNotFound)
+			return
+		}
+
+		fmt.Fprintf(w, "%d - %s / %s (%d)\n", book.ID, book.Title, book.Author, book.Year)
 		return
 	}
 
