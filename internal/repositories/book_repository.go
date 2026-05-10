@@ -10,6 +10,7 @@ type BookRepository interface {
 	FindByID(id int) (*models.Book, error)
 	Create(book models.Book) (models.Book, error)
 	Update(id int, book models.Book) (models.Book, error)
+	Delete(id int) error
 }
 
 type MemoryBookRepository struct {
@@ -61,4 +62,15 @@ func (r *MemoryBookRepository) Update(id int, book models.Book) (models.Book, er
 	}
 
 	return models.Book{}, errors.New("book not found")
+}
+
+func (r *MemoryBookRepository) Delete(id int) error {
+	for i, book := range r.books {
+		if book.ID == id {
+			r.books = append(r.books[:i], r.books[i+1:]...)
+			return nil
+		}
+	}
+
+	return errors.New("book not found")
 }

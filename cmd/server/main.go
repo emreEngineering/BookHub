@@ -94,8 +94,30 @@ func booksHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.Method == http.MethodDelete {
+		idParam := r.URL.Query().Get("id")
+		if idParam == "" {
+			http.Error(w, "Kitap ID zorunludur", http.StatusBadRequest)
+			return
+		}
+
+		id, err := strconv.Atoi(idParam)
+		if err != nil {
+			http.Error(w, "Gecersiz kitap ID", http.StatusBadRequest)
+			return
+		}
+
+		if err := bookRepo.Delete(id); err != nil {
+			http.Error(w, "Kitap bulunamadi", http.StatusNotFound)
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
 	if r.Method != http.MethodGet {
-		http.Error(w, "Bu endpoint sadece GET, POST ve PUT destekler", http.StatusMethodNotAllowed)
+		http.Error(w, "Bu endpoint sadece GET, POST, PUT ve DELETE destekler", http.StatusMethodNotAllowed)
 		return
 	}
 
