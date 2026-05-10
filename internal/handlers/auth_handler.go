@@ -40,3 +40,25 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 	responses.Success(w, http.StatusCreated, "Kullanıcı oluşturuldu", user)
 }
+
+func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		responses.Error(w, http.StatusMethodNotAllowed, "Bu endpoint sadece POST destekler")
+		return
+	}
+
+	var request services.LoginRequest
+
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		responses.Error(w, http.StatusBadRequest, "Geçersiz JSON")
+		return
+	}
+
+	user, err := h.userService.Login(request)
+	if err != nil {
+		responses.Error(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+	responses.Success(w, http.StatusOK, "Giriş başarılı", user)
+}

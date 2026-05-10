@@ -13,8 +13,13 @@ type RegisterRequest struct {
 	Password string `json:"password"`
 }
 
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
 type UserService interface {
 	Register(request RegisterRequest) (models.User, error)
+	Login(request LoginRequest) (models.User, error)
 	GetAllUsers() ([]models.User, error)
 	GetUserByID(id int) (*models.User, error)
 }
@@ -48,6 +53,32 @@ func (s *DefaultUserService) Register(request RegisterRequest) (models.User, err
 	}
 
 	return s.userRepo.Create(user)
+}
+
+func (s *DefaultUserService) Login(request LoginRequest) (models.User, error) {
+	err := validateLoginRequest(request)
+
+	if err != nil {
+		return models.User{}, err
+	}
+	user, err := s.userRepo.FindByEmail(request.Email)
+	if err != nil {
+		return models.User{}, errors.New("email veya şifre hatalı")
+	}
+	if user.PasswordHash != request.Password {
+		return models.User{}, errors.New("email veya şifre hatalı")
+	}
+	return *user, nil
+}
+
+func validateLoginRequest(request LoginRequest) error {
+	if request.Email == "" {
+		return errors.New("email boş olamaz")
+	}
+	if request.Password == "" {
+		return errors.New("şifre boş olamaz")
+	}
+	return nil
 }
 
 func (s *DefaultUserService) GetAllUsers() ([]models.User, error) {
