@@ -2,6 +2,7 @@ package main
 
 import (
 	"BookHub/internal/repositories"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -27,6 +28,8 @@ func booksHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+
 	idParam := r.URL.Query().Get("id")
 	if idParam != "" {
 		id, err := strconv.Atoi(idParam)
@@ -41,7 +44,7 @@ func booksHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fmt.Fprintf(w, "%d - %s / %s (%d)\n", book.ID, book.Title, book.Author, book.Year)
+		json.NewEncoder(w).Encode(book)
 		return
 	}
 
@@ -51,9 +54,7 @@ func booksHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, book := range books {
-		fmt.Fprintf(w, "%d - %s / %s (%d)\n", book.ID, book.Title, book.Author, book.Year)
-	}
+	json.NewEncoder(w).Encode(books)
 }
 
 func main() {
