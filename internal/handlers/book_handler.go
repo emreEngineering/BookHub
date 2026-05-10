@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"BookHub/internal/services"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -10,12 +11,12 @@ import (
 )
 
 type BookHandler struct {
-	bookRepo repositories.BookRepository
+	bookService services.BookServices
 }
 
 func NewBookHandler(bookRepo repositories.BookRepository) *BookHandler {
 	return &BookHandler{
-		bookRepo: bookRepo,
+		bookService: services.NewBookService(bookRepo),
 	}
 }
 
@@ -31,19 +32,9 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if book.Title == "" {
-			http.Error(w, "Kitap adı boş olamaz", http.StatusBadRequest)
-			return
-		}
-
-		if book.Author == "" {
-			http.Error(w, "Yazar adı boş olamaz", http.StatusBadRequest)
-			return
-		}
-
-		createdBook, err := h.bookRepo.Create(book)
+		createdBook, err := h.bookService.CreateBook(book)
 		if err != nil {
-			http.Error(w, "Kitap oluşturulamadı", http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -73,19 +64,14 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if book.Title == "" {
-			http.Error(w, "Kitap adı boş olamaz", http.StatusBadRequest)
-			return
-		}
-
-		if book.Author == "" {
-			http.Error(w, "Yazar adı boş olamaz", http.StatusBadRequest)
-			return
-		}
-
-		updatedBook, err := h.bookRepo.Update(id, book)
+		updatedBook, err := h.bookService.UpdateBook(id, book)
 		if err != nil {
-			http.Error(w, "Kitap bulunamadı", http.StatusNotFound)
+			if err.Error() == "Kitap bulunamadı" {
+				http.Error(w, err.Error(), http.StatusNotFound)
+				return
+			}
+
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -106,7 +92,7 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err = h.bookRepo.Delete(id)
+		err = h.bookService.DeleteBook(id)
 		if err != nil {
 			http.Error(w, "Kitap bulunamadı", http.StatusNotFound)
 			return
@@ -130,7 +116,7 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		book, err := h.bookRepo.FindByID(id)
+		book, err := h.bookService.GetBookByID(id)
 		if err != nil {
 			http.Error(w, "Kitap bulunamadı", http.StatusNotFound)
 			return
@@ -140,7 +126,7 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	books, err := h.bookRepo.FindAll()
+	books, err := h.bookService.GetAllBooks()
 	if err != nil {
 		http.Error(w, "Kitaplar alınamadı", http.StatusInternalServerError)
 		return
