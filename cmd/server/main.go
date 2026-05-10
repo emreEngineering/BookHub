@@ -37,8 +37,7 @@ func aboutHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	// Bellekte çalışan kitap deposunu oluşturur ve global değişkene atar.
 	bookRepo = repositories.NewMemoryBookRepository()
-	handlers.BookRepo = bookRepo
-	bookHandler := handlers.NewBookHandler()
+	bookHandler := handlers.NewBookHandler(bookRepo)
 
 	// Ana sayfa adresini homeHandler fonksiyonuna bağlar.
 	http.HandleFunc("/", homeHandler)

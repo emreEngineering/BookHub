@@ -8,12 +8,14 @@ import (
 	"strconv"
 )
 
-var BookRepo repositories.BookRepository
+type BookHandler struct {
+	bookRepo repositories.BookRepository
+}
 
-type BookHandler struct{}
-
-func NewBookHandler() *BookHandler {
-	return &BookHandler{}
+func NewBookHandler(bookRepo repositories.BookRepository) *BookHandler {
+	return &BookHandler{
+		bookRepo: bookRepo,
+	}
 }
 
 func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +40,7 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		createdBook, err := BookRepo.Create(book)
+		createdBook, err := h.bookRepo.Create(book)
 		if err != nil {
 			http.Error(w, "Kitap oluşturulamadı", http.StatusInternalServerError)
 			return
@@ -79,7 +81,7 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		updatedBook, err := BookRepo.Update(id, book)
+		updatedBook, err := h.bookRepo.Update(id, book)
 		if err != nil {
 			http.Error(w, "Kitap bulunamadı", http.StatusNotFound)
 			return
@@ -102,7 +104,7 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err = BookRepo.Delete(id)
+		err = h.bookRepo.Delete(id)
 		if err != nil {
 			http.Error(w, "Kitap bulunamadı", http.StatusNotFound)
 			return
@@ -125,7 +127,7 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		book, err := BookRepo.FindByID(id)
+		book, err := h.bookRepo.FindByID(id)
 		if err != nil {
 			http.Error(w, "Kitap bulunamadı", http.StatusNotFound)
 			return
@@ -135,7 +137,7 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	books, err := BookRepo.FindAll()
+	books, err := h.bookRepo.FindAll()
 	if err != nil {
 		http.Error(w, "Kitaplar alınamadı", http.StatusInternalServerError)
 		return
