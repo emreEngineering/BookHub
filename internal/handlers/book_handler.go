@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"BookHub/internal/responses"
 	"BookHub/internal/services"
 	"encoding/json"
 	"net/http"
@@ -27,13 +28,13 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 
 		err := json.NewDecoder(r.Body).Decode(&book)
 		if err != nil {
-			http.Error(w, "Geçersiz JSON", http.StatusBadRequest)
+			responses.Error(w, http.StatusBadRequest, "Geçersiz JSON")
 			return
 		}
 
 		createdBook, err := h.bookService.CreateBook(book)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			responses.Error(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
@@ -45,13 +46,13 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPut {
 		idParam := r.URL.Query().Get("id")
 		if idParam == "" {
-			http.Error(w, "Kitap ID zorunludur", http.StatusBadRequest)
+			responses.Error(w, http.StatusBadRequest, "Kitap ID zorunludur")
 			return
 		}
 
 		id, err := strconv.Atoi(idParam)
 		if err != nil {
-			http.Error(w, "Geçersiz kitap ID", http.StatusBadRequest)
+			responses.Error(w, http.StatusBadRequest, "Geçersiz kitap ID")
 			return
 		}
 
@@ -59,17 +60,18 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 
 		err = json.NewDecoder(r.Body).Decode(&book)
 		if err != nil {
-			http.Error(w, "Geçersiz JSON", http.StatusBadRequest)
+			responses.Error(w, http.StatusBadRequest, "Geçersiz JSON")
 			return
 		}
 
 		updatedBook, err := h.bookService.UpdateBook(id, book)
 		if err != nil {
-			if err.Error() == "kitap bulunamadı" {
-				http.Error(w, err.Error(), http.StatusNotFound)
+			if err.Error() == "Kitap bulunamadı" {
+				responses.Error(w, http.StatusNotFound, "Kitap bulunamadı")
 				return
 			}
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			responses.Error(w, http.StatusBadRequest, err.Error())
+			return
 		}
 		json.NewEncoder(w).Encode(updatedBook)
 		return
@@ -78,19 +80,19 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodDelete {
 		idParam := r.URL.Query().Get("id")
 		if idParam == "" {
-			http.Error(w, "Kitap ID zorunludur", http.StatusBadRequest)
+			responses.Error(w, http.StatusBadRequest, "Kitap ID zorunludur")
 			return
 		}
 
 		id, err := strconv.Atoi(idParam)
 		if err != nil {
-			http.Error(w, "Geçersiz kitap ID", http.StatusBadRequest)
+			responses.Error(w, http.StatusBadRequest, "Geçersiz kitap ID")
 			return
 		}
 
 		err = h.bookService.DeleteBook(id)
 		if err != nil {
-			http.Error(w, "Kitap bulunamadı", http.StatusNotFound)
+			responses.Error(w, http.StatusNotFound, "Kitap bulunamadı")
 			return
 		}
 
@@ -99,7 +101,7 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != http.MethodGet {
-		http.Error(w, "Bu endpoint sadece GET, POST, PUT ve DELETE destekler", http.StatusMethodNotAllowed)
+		responses.Error(w, http.StatusMethodNotAllowed, "Bu endpoint sadece GET, POST, PUT ve DELETE destekler")
 		return
 	}
 
@@ -108,13 +110,13 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 	if idParam != "" {
 		id, err := strconv.Atoi(idParam)
 		if err != nil {
-			http.Error(w, "Geçersiz kitap ID", http.StatusBadRequest)
+			responses.Error(w, http.StatusBadRequest, "Geçersiz kitap ID")
 			return
 		}
 
 		book, err := h.bookService.GetBookByID(id)
 		if err != nil {
-			http.Error(w, "Kitap bulunamadı", http.StatusNotFound)
+			responses.Error(w, http.StatusNotFound, "Kitap bulunamadı")
 			return
 		}
 
@@ -124,7 +126,7 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 
 	books, err := h.bookService.GetAllBooks()
 	if err != nil {
-		http.Error(w, "Kitaplar alınamadı", http.StatusInternalServerError)
+		responses.Error(w, http.StatusInternalServerError, "Kitaplar alınamadı")
 		return
 	}
 
