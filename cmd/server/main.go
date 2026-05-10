@@ -26,10 +26,14 @@ func main() {
 	bookService := services.NewBookService(bookRepo)
 	bookHandler := handlers.NewBookHandler(bookService)
 
+	userRepo := repositories.NewMemoryUserRepository()
+	userService := services.NewUserService(userRepo)
+	authHandler := handlers.NewAuthHandler(userService)
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/about", aboutHandler)
 	http.HandleFunc("/books", bookHandler.BooksHandler)
+	http.HandleFunc("/register", authHandler.RegisterHandler)
 
 	fmt.Println("Server çalışıyor: http://localhost:8080")
 
