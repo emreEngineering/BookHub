@@ -1,6 +1,7 @@
 package main
 
 import (
+	"BookHub/internal/models"
 	"BookHub/internal/repositories"
 	"encoding/json"
 	"fmt"
@@ -23,12 +24,41 @@ func aboutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func booksHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Bu endpoint sadece GET destekler", http.StatusMethodNotAllowed)
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method == http.MethodPost {
+		var book models.Book
+
+		if err := json.NewDecoder(r.Body).Decode(&book); err != nil {
+			http.Error(w, "Gecersiz JSON", http.StatusBadRequest)
+			return
+		}
+
+		if book.Title == "" {
+			http.Error(w, "Kitap adi bos olamaz", http.StatusBadRequest)
+			return
+		}
+
+		if book.Author == "" {
+			http.Error(w, "Yazar adi bos olamaz", http.StatusBadRequest)
+			return
+		}
+
+		createdBook, err := bookRepo.Create(book)
+		if err != nil {
+			http.Error(w, "Kitap olusturulamadi", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(createdBook)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodGet {
+		http.Error(w, "Bu endpoint sadece GET ve POST destekler", http.StatusMethodNotAllowed)
+		return
+	}
 
 	idParam := r.URL.Query().Get("id")
 	if idParam != "" {

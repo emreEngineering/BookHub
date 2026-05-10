@@ -8,14 +8,17 @@ import (
 type BookRepository interface {
 	FindAll() ([]models.Book, error)
 	FindByID(id int) (*models.Book, error)
+	Create(book models.Book) (models.Book, error)
 }
 
 type MemoryBookRepository struct {
-	books []models.Book
+	books  []models.Book
+	nextID int
 }
 
 func NewMemoryBookRepository() *MemoryBookRepository {
 	return &MemoryBookRepository{
+		nextID: 4,
 		books: []models.Book{
 			{ID: 1, Title: "Suc ve Ceza", Author: "Dostoyevski", Year: 1866},
 			{ID: 2, Title: "1984", Author: "George Orwell", Year: 1949},
@@ -37,4 +40,12 @@ func (r *MemoryBookRepository) FindByID(id int) (*models.Book, error) {
 	}
 
 	return nil, errors.New("book not found")
+}
+
+func (r *MemoryBookRepository) Create(book models.Book) (models.Book, error) {
+	book.ID = r.nextID
+	r.nextID++
+	r.books = append(r.books, book)
+
+	return book, nil
 }
