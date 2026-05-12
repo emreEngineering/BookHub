@@ -102,3 +102,30 @@ func (h *AuthHandler) MeHandler(w http.ResponseWriter, r *http.Request) {
 
 	responses.Success(w, http.StatusOK, "Kullanıcı girilidi", user)
 }
+func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		responses.Error(w, http.StatusMethodNotAllowed, "Bu endpoint sadece post destekler")
+		return
+	}
+
+	cookie, err := r.Cookie("session_id")
+	if err != nil {
+		responses.Error(w, http.StatusUnauthorized, "zaten giriş yapılmamış")
+		return
+	}
+	err = h.sessionService.DeleteSession(cookie.Value)
+	if err != nil {
+		responses.Error(w, http.StatusInternalServerError, "Çıkış yapılamadı")
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_id",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   -1,
+	})
+	responses.Success(w, http.StatusOK, "Çıkış başarılı", nil)
+}
