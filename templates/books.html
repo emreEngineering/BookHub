@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>BookHub - Kitaplar</title>
+</head>
+<body>
+<h1>BookHub Kitap Listesi</h1>
+
+<ul>
+    {{range .Books}}
+    <li>{{.ID}} - {{.Title}} - {{.Author}} ({{.Year}})</li>
+    {{else}}
+    <li>Henüz kitap yok.</li>
+    {{end}}
+</ul>
+</body>
+</html>
