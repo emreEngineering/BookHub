@@ -30,19 +30,21 @@ func (h *WebHandler) BooksPageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl, err := template.ParseFiles("templates/books.html")
+	tmpl, err := template.ParseFiles("templates/layout.html", "templates/books.html")
 	if err != nil {
 		responses.Error(w, http.StatusInternalServerError, "Template yüklenemedi")
 		return
 	}
 
 	data := struct {
+		Title string
 		Books interface{}
 	}{
+		Title: "BookHub - Kitaplar",
 		Books: books,
 	}
 
-	err = tmpl.Execute(w, data)
+	err = tmpl.ExecuteTemplate(w, "layout", data)
 	if err != nil {
 		responses.Error(w, http.StatusInternalServerError, "Template çalıştırılamadı")
 		return

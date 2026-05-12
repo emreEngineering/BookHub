@@ -35,6 +35,7 @@ func main() {
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/about", aboutHandler)
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	http.HandleFunc("/books", bookHandler.BooksHandler)
 	http.HandleFunc("/web/books", webHandler.BooksPageHandler)
 	http.HandleFunc("/register", authHandler.RegisterHandler)

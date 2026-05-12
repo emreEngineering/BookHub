@@ -1,0 +1,25 @@
+{{define "layout"}}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<header>
+    <h1>BookHub</h1>
+
+    <nav>
+        <a href="/web/books">Kitaplar</a>
+        <a href="/web/login">Giriş Yap</a>
+        <a href="/web/register">Kayıt Ol</a>
+    </nav>
+</header>
+
+<main>
+    {{template "content" .}}
+</main>
+</body>
+</html>
+{{end}}
