@@ -1,0 +1,19 @@
+{{define "content"}}
+<section>
+  <h2>Giriş Yap</h2>
+
+  <form method="post" action="/web/login">
+    <div>
+      <label for="email">Email</label>
+      <input id="email" type="email" name="email" required>
+    </div>
+
+    <div>
+      <label for="password">Şifre</label>
+      <input id="password" type="password" name="password" required>
+    </div>
+
+    <button type="submit">Giriş Yap</button>
+  </form>
+</section>
+{{end}}

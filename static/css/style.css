@@ -40,3 +40,36 @@ ul {
 li {
     margin-bottom: 8px;
 }
+
+form {
+    display: grid;
+    gap: 16px;
+    max-width: 420px;
+}
+
+label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: bold;
+}
+
+input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+button {
+    width: fit-content;
+    padding: 10px 16px;
+    border: 0;
+    border-radius: 4px;
+    background: #222;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #444;
+}
