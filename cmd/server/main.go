@@ -1,6 +1,7 @@
 package main
 
 import (
+	"BookHub/internal/middleware"
 	"BookHub/internal/services"
 	"fmt"
 	"net/http"
@@ -30,15 +31,15 @@ func main() {
 	userService := services.NewUserService(userRepo)
 	sessionService := services.NewSessionService()
 	authHandler := handlers.NewAuthHandler(userService, sessionService)
-
+	authMiddleware := middleware.NewAuthMiddleware(sessionService)
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/about", aboutHandler)
 	http.HandleFunc("/books", bookHandler.BooksHandler)
 	http.HandleFunc("/register", authHandler.RegisterHandler)
 	http.HandleFunc("/login", authHandler.LoginHandler)
-	http.HandleFunc("/me", authHandler.MeHandler)
-	http.HandleFunc("/logout", authHandler.LogoutHandler)
+	http.HandleFunc("/me", authMiddleware.RequireAuth(authHandler.MeHandler))
+	http.HandleFunc("/logout", authMiddleware.RequireAuth(authHandler.LogoutHandler))
 	fmt.Println("Server çalışıyor: http://localhost:8080")
 
 	err := http.ListenAndServe(":8080", nil)
