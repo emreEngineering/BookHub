@@ -37,6 +37,7 @@ func main() {
 	http.HandleFunc("/books", bookHandler.BooksHandler)
 	http.HandleFunc("/register", authHandler.RegisterHandler)
 	http.HandleFunc("/login", authHandler.LoginHandler)
+	http.HandleFunc("/me", authHandler.MeHandler)
 	fmt.Println("Server çalışıyor: http://localhost:8080")
 
 	err := http.ListenAndServe(":8080", nil)

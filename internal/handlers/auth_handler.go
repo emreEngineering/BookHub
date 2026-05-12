@@ -78,3 +78,27 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	})
 	responses.Success(w, http.StatusOK, "Giriş başarılı", user)
 }
+
+func (h *AuthHandler) MeHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		responses.Error(w, http.StatusMethodNotAllowed, "Buendpoint sadece GET destekler")
+		return
+	}
+	cookie, err := r.Cookie("session_id")
+
+	if err != nil {
+		responses.Error(w, http.StatusUnauthorized, "Giriş yapmalısnız")
+		return
+	}
+	userID, err := h.sessionService.GetUserID(cookie.Value)
+	if err != nil {
+		responses.Error(w, http.StatusUnauthorized, "Giriş yapmalısınız")
+		return
+	}
+	user, err := h.userService.GetUserByID(userID)
+	if err != nil {
+		responses.Error(w, http.StatusUnauthorized, "Giriş yapmalısınız")
+	}
+
+	responses.Success(w, http.StatusOK, "Kullanıcı girilidi", user)
+}
