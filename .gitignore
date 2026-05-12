@@ -29,3 +29,6 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# Test cookies
+cookies.txt
