@@ -1,10 +1,24 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{{define "content"}}
+<section>
+    <h2>Kayıt Ol</h2>
 
-</body>
-</html>
+    <form method="post" action="/web/register">
+        <div>
+            <label for="name">Ad</label>
+            <input id="name" type="text" name="name" required>
+        </div>
+
+        <div>
+            <label for="email">Email</label>
+            <input id="email" type="email" name="email" required>
+        </div>
+
+        <div>
+            <label for="password">Şifre</label>
+            <input id="password" type="password" name="password" required>
+        </div>
+
+        <button type="submit">Kayıt Ol</button>
+    </form>
+</section>
+{{end}}
