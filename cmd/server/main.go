@@ -33,7 +33,7 @@ func main() {
 	authHandler := handlers.NewAuthHandler(userService, sessionService)
 	authMiddleware := middleware.NewAuthMiddleware(sessionService)
 
-	webHandler := handlers.NewWebHandler(bookService, userService)
+	webHandler := handlers.NewWebHandler(bookService, userService, sessionService)
 
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/health", healthHandler)

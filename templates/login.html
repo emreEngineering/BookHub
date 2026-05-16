@@ -2,6 +2,10 @@
 <section>
   <h2>Giriş Yap</h2>
 
+  {{if .Error}}
+  <p class="error">{{.Error}}</p>
+  {{end}}
+
   <form method="post" action="/web/login">
     <div>
       <label for="email">Email</label>
