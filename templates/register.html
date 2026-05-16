@@ -2,6 +2,14 @@
 <section>
     <h2>Kayıt Ol</h2>
 
+    {{if .Error}}
+    <p class="error">{{.Error}}</p>
+    {{end}}
+
+    {{if .Message}}
+    <p class="success">{{.Message}}</p>
+    {{end}}
+    
     <form method="post" action="/web/register">
         <div>
             <label for="name">Ad</label>

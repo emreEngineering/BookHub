@@ -26,12 +26,14 @@ func main() {
 	bookRepo := repositories.NewMemoryBookRepository()
 	bookService := services.NewBookService(bookRepo)
 	bookHandler := handlers.NewBookHandler(bookService)
-	webHandler := handlers.NewWebHandler(bookService)
+
 	userRepo := repositories.NewMemoryUserRepository()
 	userService := services.NewUserService(userRepo)
 	sessionService := services.NewSessionService()
 	authHandler := handlers.NewAuthHandler(userService, sessionService)
 	authMiddleware := middleware.NewAuthMiddleware(sessionService)
+
+	webHandler := handlers.NewWebHandler(bookService, userService)
 
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/health", healthHandler)

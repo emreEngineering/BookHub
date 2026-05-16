@@ -73,3 +73,17 @@ button {
 button:hover {
     background: #444;
 }
+
+.error {
+    color: #b00020;
+    background: #ffe8ec;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.success {
+    color: #0f6b2f;
+    background: #e7f7ec;
+    padding: 10px;
+    border-radius: 4px;
+}
