@@ -116,3 +116,16 @@ nav span {
     text-decoration: underline;
     background: transparent;
 }
+
+.inline-form {
+    display: inline;
+    margin-left: 12px;
+}
+
+.danger-button {
+    background: #b00020;
+}
+
+.danger-button:hover {
+    background: #850018;
+}

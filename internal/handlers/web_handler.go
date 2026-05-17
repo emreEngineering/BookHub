@@ -277,3 +277,28 @@ func (h *WebHandler) renderBookFormPage(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 }
+
+func (h *WebHandler) BookDeletePageHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		responses.Error(w, http.StatusMethodNotAllowed, "Bu endpoint sadece POST destekler")
+		return
+	}
+
+	idParam := r.URL.Query().Get("id")
+	if idParam == "" {
+		responses.Error(w, http.StatusBadRequest, "Kitap ID zorunludur")
+		return
+	}
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		responses.Error(w, http.StatusBadRequest, "Geçersiz kita ID")
+		return
+	}
+	err = h.bookService.DeleteBook(id)
+	if err != nil {
+		responses.Error(w, http.StatusNotFound, "Kitap bulunamadı")
+		return
+	}
+	http.Redirect(w, r, "/web/books", http.StatusSeeOther)
+}
