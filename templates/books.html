@@ -2,6 +2,10 @@
 <section>
     <h2>Kitap Listesi</h2>
 
+    <p>
+        <a href="/web/books/new">Yeni Kitap Ekle</a>
+    </p>
+
     <ul>
         {{range .Books}}
         <li>{{.ID}} - {{.Title}} - {{.Author}} ({{.Year}})</li>

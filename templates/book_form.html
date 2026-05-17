@@ -1,0 +1,28 @@
+{{define "content"}}
+<section>
+  <h2>Yeni Kitap Ekle</h2>
+
+  {{if .Error}}
+  <p class="error">{{.Error}}</p>
+  {{end}}
+
+  <form method="post" action="/web/books/new">
+    <div>
+      <label for="title">Kitap Adı</label>
+      <input id="title" type="text" name="title" required>
+    </div>
+
+    <div>
+      <label for="author">Yazar</label>
+      <input id="author" type="text" name="author" required>
+    </div>
+
+    <div>
+      <label for="year">Yıl</label>
+      <input id="year" type="number" name="year" required>
+    </div>
+
+    <button type="submit">Kitap Ekle</button>
+  </form>
+</section>
+{{end}}

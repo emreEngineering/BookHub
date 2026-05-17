@@ -41,6 +41,7 @@ func main() {
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	http.HandleFunc("/books", bookHandler.BooksHandler)
 	http.HandleFunc("/web/books", webHandler.BooksPageHandler)
+	http.HandleFunc("/web/books/new", webHandler.BookCreatePageHandler)
 	http.HandleFunc("/web/login", webHandler.LoginPageHandler)
 	http.HandleFunc("/web/register", webHandler.RegisterPageHandler)
 	http.HandleFunc("/web/logout", webHandler.LogoutPageHandler)

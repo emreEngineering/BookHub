@@ -6,6 +6,7 @@ import (
 	"BookHub/internal/services"
 	"html/template"
 	"net/http"
+	"strconv"
 )
 
 type WebHandler struct {
@@ -218,4 +219,61 @@ func (h *WebHandler) LogoutPageHandler(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   -1,
 	})
 	http.Redirect(w, r, "/web/login", http.StatusSeeOther)
+}
+
+func (h *WebHandler) BookCreatePageHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		h.renderBookFormPage(w, r, "")
+		return
+	}
+	if r.Method == http.MethodPost {
+		year, err := strconv.Atoi(r.FormValue("year"))
+		if err != nil {
+			h.renderBookFormPage(w, r, "Yıl geçerli bir sayı olmalıdır")
+			return
+		}
+
+		book := models.Book{
+			Title:  r.FormValue("title"),
+			Author: r.FormValue("author"),
+			Year:   year,
+		}
+
+		_, err = h.bookService.CreateBook(book)
+		if err != nil {
+			h.renderBookFormPage(w, r, err.Error())
+			return
+		}
+		http.Redirect(w, r, "/web/books", http.StatusSeeOther)
+		return
+	}
+	responses.Error(w, http.StatusMethodNotAllowed, "Bu endpoint sadece GET ve POST destekler")
+}
+
+func (h *WebHandler) renderBookFormPage(w http.ResponseWriter, r *http.Request, errorMessage string) {
+	tmpl, err := template.ParseFiles("templates/layout.html", "templates/book_form.html")
+	if err != nil {
+		responses.Error(w, http.StatusInternalServerError, "Template yüklenemedi")
+		return
+	}
+
+	currentUser, isAuthenticated := h.currentUser(r)
+
+	data := struct {
+		Title           string
+		Error           string
+		IsAuthenticated bool
+		CurrentUser     *models.User
+	}{
+		Title:           "BookHub - Yeni Kitap Ekle",
+		Error:           errorMessage,
+		IsAuthenticated: isAuthenticated,
+		CurrentUser:     currentUser,
+	}
+
+	err = tmpl.ExecuteTemplate(w, "layout", data)
+	if err != nil {
+		responses.Error(w, http.StatusInternalServerError, "Template çalıştırılamadı")
+		return
+	}
 }
