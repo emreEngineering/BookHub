@@ -42,6 +42,7 @@ func main() {
 	http.HandleFunc("/books", bookHandler.BooksHandler)
 	http.HandleFunc("/web/books", webHandler.BooksPageHandler)
 	http.HandleFunc("/web/books/new", webHandler.BookCreatePageHandler)
+	http.HandleFunc("/web/books/edit", webHandler.BookEditPageHandler)
 	http.HandleFunc("/web/books/delete", webHandler.BookDeletePageHandler)
 	http.HandleFunc("/web/login", webHandler.LoginPageHandler)
 	http.HandleFunc("/web/register", webHandler.RegisterPageHandler)

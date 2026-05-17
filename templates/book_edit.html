@@ -1,0 +1,29 @@
+{{define "content"}}
+<section>
+    <h2>Kitap Düzenle</h2>
+
+    {{if .Error}}
+    <p class="error">{{.Error}}</p>
+    {{end}}
+
+    <form method="post" action="/web/books/edit?id={{.Book.ID}}">
+        <div>
+            <label for="title">Kitap Adı</label>
+            <input id="title" type="text" name="title" value="{{.Book.Title}}" required>
+        </div>
+
+        <div>
+            <label for="author">Yazar</label>
+            <input id="author" type="text" name="author" value="{{.Book.Author}}" required>
+        </div>
+
+        <div>
+            <label for="year">Yıl</label>
+            <input id="year" type="number" name="year" value="{{.Book.Year}}" required>
+        </div>
+
+        <button type="submit">Güncelle</button>
+        <a href="/web/books">Vazgeç</a>
+    </form>
+</section>
+{{end}}

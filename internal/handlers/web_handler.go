@@ -302,3 +302,84 @@ func (h *WebHandler) BookDeletePageHandler(w http.ResponseWriter, r *http.Reques
 	}
 	http.Redirect(w, r, "/web/books", http.StatusSeeOther)
 }
+
+func (h *WebHandler) BookEditPageHandler(w http.ResponseWriter, r *http.Request) {
+	idParam := r.URL.Query().Get("id")
+	if idParam == "" {
+		responses.Error(w, http.StatusBadRequest, "Kitap ID zorunludur")
+		return
+	}
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		responses.Error(w, http.StatusBadRequest, "Geçersiz kitap ID")
+		return
+	}
+
+	if r.Method == http.MethodGet {
+		book, err := h.bookService.GetBookByID(id)
+		if err != nil {
+			responses.Error(w, http.StatusNotFound, "Kitap bulunamadı")
+			return
+		}
+		h.renderBookEditPage(w, r, *book, "")
+		return
+	}
+
+	if r.Method == http.MethodPost {
+		year, err := strconv.Atoi(r.FormValue("year"))
+		if err != nil {
+			book := models.Book{
+				ID:     id,
+				Title:  r.FormValue("title"),
+				Author: r.FormValue("author"),
+				Year:   0,
+			}
+			h.renderBookEditPage(w, r, book, "Yıl geçerli bir sayı olamlıdır")
+			return
+		}
+
+		book := models.Book{
+			Title:  r.FormValue("title"),
+			Author: r.FormValue("author"),
+			Year:   year,
+		}
+
+		_, err = h.bookService.UpdateBook(id, book)
+		if err != nil {
+			book.ID = id
+			h.renderBookEditPage(w, r, book, err.Error())
+			return
+		}
+		http.Redirect(w, r, "/web/books", http.StatusSeeOther)
+		return
+	}
+	responses.Error(w, http.StatusMethodNotAllowed, "Bu endpoint sadece GET ve POST destekler")
+}
+
+func (h *WebHandler) renderBookEditPage(w http.ResponseWriter, r *http.Request, book models.Book, errorMessage string) {
+	tmpl, err := template.ParseFiles("templates/layout.html", "templates/book_edit.html")
+	if err != nil {
+		responses.Error(w, http.StatusInternalServerError, "Template yüklenemedi")
+		return
+	}
+	currentUser, isAuthenticated := h.currentUser(r)
+
+	data := struct {
+		Title           string
+		Error           string
+		Book            models.Book
+		IsAuthenticated bool
+		CurrentUser     *models.User
+	}{
+		Title:           "BookHub - Kitap Düzenle",
+		Error:           errorMessage,
+		Book:            book,
+		IsAuthenticated: isAuthenticated,
+		CurrentUser:     currentUser,
+	}
+	err = tmpl.ExecuteTemplate(w, "layout", data)
+	if err != nil {
+		responses.Error(w, http.StatusInternalServerError, "Template çalıştırılamadı")
+		return
+	}
+}

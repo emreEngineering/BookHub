@@ -11,6 +11,8 @@
         <li>
             {{.ID}} - {{.Title}} - {{.Author}} ({{.Year}})
 
+            <a href="/web/books/edit?id={{.ID}}" class="edit-link">Düzenle</a>
+
             <form method="post" action="/web/books/delete?id={{.ID}}" class="inline-form">
                 <button type="submit" class="danger-button">Sil</button>
             </form>
