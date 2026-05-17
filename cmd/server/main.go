@@ -1,6 +1,7 @@
 package main
 
 import (
+	"BookHub/internal/database"
 	"BookHub/internal/middleware"
 	"BookHub/internal/services"
 	"fmt"
@@ -23,6 +24,13 @@ func aboutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	db, err := database.Connect()
+	if err != nil {
+		fmt.Println("Database bağlantısı hatası: ", err)
+		return
+	}
+	defer db.Close()
+
 	bookRepo := repositories.NewMemoryBookRepository()
 	bookService := services.NewBookService(bookRepo)
 	bookHandler := handlers.NewBookHandler(bookService)
@@ -53,7 +61,7 @@ func main() {
 	http.HandleFunc("/logout", authMiddleware.RequireAuth(authHandler.LogoutHandler))
 	fmt.Println("Server çalışıyor: http://localhost:8080")
 
-	err := http.ListenAndServe(":8080", nil)
+	err = http.ListenAndServe(":8080", nil)
 	if err != nil {
 		fmt.Println("Server başlatılamadı:", err)
 	}
