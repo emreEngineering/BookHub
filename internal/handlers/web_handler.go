@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"BookHub/internal/models"
 	"BookHub/internal/responses"
 	"BookHub/internal/services"
 	"html/template"
@@ -39,12 +40,18 @@ func (h *WebHandler) BooksPageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	currentUser, isAuthenticated := h.currentUser(r)
+
 	data := struct {
-		Title string
-		Books interface{}
+		Title           string
+		Books           interface{}
+		IsAuthenticated bool
+		CurrentUser     *models.User
 	}{
-		Title: "BookHub - Kitaplar",
-		Books: books,
+		Title:           "BookHub - Kitaplar",
+		Books:           books,
+		IsAuthenticated: isAuthenticated,
+		CurrentUser:     currentUser,
 	}
 
 	err = tmpl.ExecuteTemplate(w, "layout", data)
@@ -102,11 +109,15 @@ func (h *WebHandler) renderLoginPage(w http.ResponseWriter, errorMessage string)
 	}
 
 	data := struct {
-		Title string
-		Error string
+		Title           string
+		Error           string
+		IsAuthenticated bool
+		CurrentUser     *models.User
 	}{
-		Title: "BookHub - Giriş Yap",
-		Error: errorMessage,
+		Title:           "BookHub - Giriş Yap",
+		Error:           errorMessage,
+		IsAuthenticated: false,
+		CurrentUser:     nil,
 	}
 
 	err = tmpl.ExecuteTemplate(w, "layout", data)
@@ -149,13 +160,17 @@ func (h *WebHandler) renderRegisterPage(w http.ResponseWriter, errorMessage stri
 	}
 
 	data := struct {
-		Title   string
-		Error   string
-		Message string
+		Title           string
+		Error           string
+		Message         string
+		IsAuthenticated bool
+		CurrentUser     *models.User
 	}{
-		Title:   "BookHub - Kayıt Ol",
-		Error:   errorMessage,
-		Message: "",
+		Title:           "BookHub - Kayıt Ol",
+		Error:           errorMessage,
+		Message:         "",
+		IsAuthenticated: false,
+		CurrentUser:     nil,
 	}
 
 	err = tmpl.ExecuteTemplate(w, "layout", data)
@@ -163,4 +178,44 @@ func (h *WebHandler) renderRegisterPage(w http.ResponseWriter, errorMessage stri
 		responses.Error(w, http.StatusInternalServerError, "Template çalıştırılamadı")
 		return
 	}
+}
+
+func (h *WebHandler) currentUser(r *http.Request) (*models.User, bool) {
+	cookie, err := r.Cookie("session_id")
+	if err != nil {
+		return nil, false
+	}
+
+	userID, err := h.sessionService.GetUserID(cookie.Value)
+	if err != nil {
+		return nil, false
+	}
+
+	user, err := h.userService.GetUserByID(userID)
+	if err != nil {
+		return nil, false
+	}
+	return user, true
+}
+
+func (h *WebHandler) LogoutPageHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		responses.Error(w, http.StatusMethodNotAllowed, "Bu endpoint sadece POST destekler")
+		return
+	}
+
+	cookie, err := r.Cookie("session_id")
+	if err == nil {
+		h.sessionService.DeleteSession(cookie.Value)
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_id",
+		Value:    "",
+		Path:     "",
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   -1,
+	})
+	http.Redirect(w, r, "/web/login", http.StatusSeeOther)
 }

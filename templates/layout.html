@@ -12,8 +12,17 @@
 
     <nav>
         <a href="/web/books">Kitaplar</a>
+
+        {{if .IsAuthenticated}}
+        <span>Merhaba, {{.CurrentUser.Name}}</span>
+
+        <form method="post" action="/web/logout" class="nav-form">
+            <button type="submit" class="nav-button">Çıkış Yap</button>
+        </form>
+        {{else}}
         <a href="/web/login">Giriş Yap</a>
         <a href="/web/register">Kayıt Ol</a>
+        {{end}}
     </nav>
 </header>
 

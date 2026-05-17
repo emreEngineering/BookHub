@@ -43,6 +43,7 @@ func main() {
 	http.HandleFunc("/web/books", webHandler.BooksPageHandler)
 	http.HandleFunc("/web/login", webHandler.LoginPageHandler)
 	http.HandleFunc("/web/register", webHandler.RegisterPageHandler)
+	http.HandleFunc("/web/logout", webHandler.LogoutPageHandler)
 	http.HandleFunc("/register", authHandler.RegisterHandler)
 	http.HandleFunc("/login", authHandler.LoginHandler)
 	http.HandleFunc("/me", authMiddleware.RequireAuth(authHandler.MeHandler))
