@@ -31,6 +31,11 @@ func main() {
 	}
 	defer db.Close()
 
+	err = database.Migrate(db)
+	if err != nil {
+		fmt.Println("Migration hatası:", err)
+		return
+	}
 	bookRepo := repositories.NewMemoryBookRepository()
 	bookService := services.NewBookService(bookRepo)
 	bookHandler := handlers.NewBookHandler(bookService)
