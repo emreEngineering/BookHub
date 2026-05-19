@@ -50,11 +50,11 @@ func main() {
 		return
 	}
 
-	bookRepo := repositories.NewPostgresBookRepository(db)
+	bookRepo := repositories.NewGormBookRepository(gormDB)
 	bookService := services.NewBookService(bookRepo)
 	bookHandler := handlers.NewBookHandler(bookService)
 
-	userRepo := repositories.NewPostgresUserRepository(db)
+	userRepo := repositories.NewGormUserRepository(gormDB)
 	userService := services.NewUserService(userRepo)
 	sessionService := services.NewSessionService()
 	authHandler := handlers.NewAuthHandler(userService, sessionService)
