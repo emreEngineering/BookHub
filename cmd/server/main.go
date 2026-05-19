@@ -4,6 +4,7 @@ import (
 	"BookHub/internal/database"
 	"BookHub/internal/gormdb"
 	"BookHub/internal/middleware"
+	"BookHub/internal/redisdb"
 	"BookHub/internal/services"
 	"fmt"
 	"net/http"
@@ -50,13 +51,20 @@ func main() {
 		return
 	}
 
+	redisClient, err := redisdb.Connect()
+	if err != nil {
+		fmt.Println("Redis bağlantısı hatası:", err)
+		return
+	}
+	defer redisClient.Close()
+
 	bookRepo := repositories.NewGormBookRepository(gormDB)
 	bookService := services.NewBookService(bookRepo)
 	bookHandler := handlers.NewBookHandler(bookService)
 
 	userRepo := repositories.NewGormUserRepository(gormDB)
 	userService := services.NewUserService(userRepo)
-	sessionService := services.NewSessionService()
+	sessionService := services.NewRedisSessionService(redisClient)
 	authHandler := handlers.NewAuthHandler(userService, sessionService)
 	authMiddleware := middleware.NewAuthMiddleware(sessionService)
 
