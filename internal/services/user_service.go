@@ -5,6 +5,7 @@ import (
 
 	"BookHub/internal/models"
 	"BookHub/internal/repositories"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type RegisterRequest struct {
@@ -45,10 +46,15 @@ func (s *DefaultUserService) Register(request RegisterRequest) (models.User, err
 		return models.User{}, errors.New("bu email zaten kayıtlı")
 	}
 
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return models.User{}, err
+	}
+
 	user := models.User{
 		Name:         request.Name,
 		Email:        request.Email,
-		PasswordHash: request.Password,
+		PasswordHash: string(passwordHash),
 		Role:         "user",
 	}
 
@@ -65,7 +71,8 @@ func (s *DefaultUserService) Login(request LoginRequest) (models.User, error) {
 	if err != nil {
 		return models.User{}, errors.New("email veya şifre hatalı")
 	}
-	if user.PasswordHash != request.Password {
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(request.Password))
+	if err != nil {
 		return models.User{}, errors.New("email veya şifre hatalı")
 	}
 	return *user, nil
