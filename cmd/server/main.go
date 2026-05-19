@@ -36,7 +36,7 @@ func main() {
 		fmt.Println("Migration hatası:", err)
 		return
 	}
-	bookRepo := repositories.NewMemoryBookRepository()
+	bookRepo := repositories.NewPostgresBookRepository(db)
 	bookService := services.NewBookService(bookRepo)
 	bookHandler := handlers.NewBookHandler(bookService)
 
