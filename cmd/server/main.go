@@ -68,7 +68,11 @@ func main() {
 	}
 	defer mongoClient.Disconnect(context.Background())
 
-	activityLogger := activity.NewMongoActivityLogService(mongoDB)
+	mongoActivityLogger := activity.NewMongoActivityLogService(mongoDB)
+	activityLogger := activity.NewAsyncActivityLogger(mongoActivityLogger, 100)
+	activityLogger.Start()
+	defer activityLogger.Stop()
+
 	activityHandler := handlers.NewActivityHandler(activityLogger)
 
 	bookRepo := repositories.NewGormBookRepository(gormDB)
