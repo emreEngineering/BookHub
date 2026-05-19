@@ -2,6 +2,7 @@ package main
 
 import (
 	"BookHub/internal/database"
+	"BookHub/internal/gormdb"
 	"BookHub/internal/middleware"
 	"BookHub/internal/services"
 	"fmt"
@@ -36,6 +37,19 @@ func main() {
 		fmt.Println("Migration hatası:", err)
 		return
 	}
+
+	gormDB, err := gormdb.Connect()
+	if err != nil {
+		fmt.Println("GORM database bağlantısı hatası:", err)
+		return
+	}
+
+	err = gormdb.AutoMigrate(gormDB)
+	if err != nil {
+		fmt.Println("GORM migration hatası:", err)
+		return
+	}
+
 	bookRepo := repositories.NewPostgresBookRepository(db)
 	bookService := services.NewBookService(bookRepo)
 	bookHandler := handlers.NewBookHandler(bookService)
