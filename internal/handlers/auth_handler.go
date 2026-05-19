@@ -100,7 +100,7 @@ func (h *AuthHandler) MeHandler(w http.ResponseWriter, r *http.Request) {
 		responses.Error(w, http.StatusUnauthorized, "Giriş yapmalısınız")
 	}
 
-	responses.Success(w, http.StatusOK, "Kullanıcı girilidi", user)
+	responses.Success(w, http.StatusOK, "Kullanıcı getirildi", user)
 }
 func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
