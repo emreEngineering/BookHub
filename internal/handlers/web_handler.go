@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"BookHub/internal/activity"
 	"BookHub/internal/models"
 	"BookHub/internal/responses"
 	"BookHub/internal/services"
@@ -13,13 +14,15 @@ type WebHandler struct {
 	bookService    services.BookServices
 	userService    services.UserService
 	sessionService services.SessionService
+	activityLogger activity.ActivityLogger
 }
 
-func NewWebHandler(bookService services.BookServices, userService services.UserService, sessionService services.SessionService) *WebHandler {
+func NewWebHandler(bookService services.BookServices, userService services.UserService, sessionService services.SessionService, activityLogger activity.ActivityLogger) *WebHandler {
 	return &WebHandler{
 		bookService:    bookService,
 		userService:    userService,
 		sessionService: sessionService,
+		activityLogger: activityLogger,
 	}
 }
 
@@ -239,11 +242,20 @@ func (h *WebHandler) BookCreatePageHandler(w http.ResponseWriter, r *http.Reques
 			Year:   year,
 		}
 
-		_, err = h.bookService.CreateBook(book)
+		createdBook, err := h.bookService.CreateBook(book)
 		if err != nil {
 			h.renderBookFormPage(w, r, err.Error())
 			return
 		}
+
+		currentUser, _ := h.currentUser(r)
+		h.logActivity("book_created", "Kitap oluşturuldu", userIDFromUser(currentUser), map[string]interface{}{
+			"book_id": createdBook.ID,
+			"title":   createdBook.Title,
+			"author":  createdBook.Author,
+			"year":    createdBook.Year,
+		})
+
 		http.Redirect(w, r, "/web/books", http.StatusSeeOther)
 		return
 	}
@@ -300,6 +312,12 @@ func (h *WebHandler) BookDeletePageHandler(w http.ResponseWriter, r *http.Reques
 		responses.Error(w, http.StatusNotFound, "Kitap bulunamadı")
 		return
 	}
+
+	currentUser, _ := h.currentUser(r)
+	h.logActivity("book_deleted", "Kitap silindi", userIDFromUser(currentUser), map[string]interface{}{
+		"book_id": id,
+	})
+
 	http.Redirect(w, r, "/web/books", http.StatusSeeOther)
 }
 
@@ -344,12 +362,21 @@ func (h *WebHandler) BookEditPageHandler(w http.ResponseWriter, r *http.Request)
 			Year:   year,
 		}
 
-		_, err = h.bookService.UpdateBook(id, book)
+		updatedBook, err := h.bookService.UpdateBook(id, book)
 		if err != nil {
 			book.ID = id
 			h.renderBookEditPage(w, r, book, err.Error())
 			return
 		}
+
+		currentUser, _ := h.currentUser(r)
+		h.logActivity("book_updated", "Kitap güncellendi", userIDFromUser(currentUser), map[string]interface{}{
+			"book_id": updatedBook.ID,
+			"title":   updatedBook.Title,
+			"author":  updatedBook.Author,
+			"year":    updatedBook.Year,
+		})
+
 		http.Redirect(w, r, "/web/books", http.StatusSeeOther)
 		return
 	}
@@ -382,4 +409,20 @@ func (h *WebHandler) renderBookEditPage(w http.ResponseWriter, r *http.Request, 
 		responses.Error(w, http.StatusInternalServerError, "Template çalıştırılamadı")
 		return
 	}
+}
+
+func (h *WebHandler) logActivity(eventType string, message string, userID *int, metadata map[string]interface{}) {
+	if h.activityLogger == nil {
+		return
+	}
+
+	_ = h.activityLogger.Log(eventType, message, userID, metadata)
+}
+
+func userIDFromUser(user *models.User) *int {
+	if user == nil {
+		return nil
+	}
+
+	return &user.ID
 }

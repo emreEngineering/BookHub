@@ -1,11 +1,14 @@
 package main
 
 import (
+	"BookHub/internal/activity"
 	"BookHub/internal/database"
 	"BookHub/internal/gormdb"
 	"BookHub/internal/middleware"
+	"BookHub/internal/mongodb"
 	"BookHub/internal/redisdb"
 	"BookHub/internal/services"
+	"context"
 	"fmt"
 	"net/http"
 
@@ -58,6 +61,16 @@ func main() {
 	}
 	defer redisClient.Close()
 
+	mongoClient, mongoDB, err := mongodb.Connect()
+	if err != nil {
+		fmt.Println("MongoDB bağlantısı hatası:", err)
+		return
+	}
+	defer mongoClient.Disconnect(context.Background())
+
+	activityLogger := activity.NewMongoActivityLogService(mongoDB)
+	activityHandler := handlers.NewActivityHandler(activityLogger)
+
 	bookRepo := repositories.NewGormBookRepository(gormDB)
 	bookService := services.NewBookService(bookRepo)
 	bookHandler := handlers.NewBookHandler(bookService)
@@ -65,10 +78,10 @@ func main() {
 	userRepo := repositories.NewGormUserRepository(gormDB)
 	userService := services.NewUserService(userRepo)
 	sessionService := services.NewRedisSessionService(redisClient)
-	authHandler := handlers.NewAuthHandler(userService, sessionService)
+	authHandler := handlers.NewAuthHandler(userService, sessionService, activityLogger)
 	authMiddleware := middleware.NewAuthMiddleware(sessionService)
 
-	webHandler := handlers.NewWebHandler(bookService, userService, sessionService)
+	webHandler := handlers.NewWebHandler(bookService, userService, sessionService, activityLogger)
 
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/health", healthHandler)
@@ -86,6 +99,7 @@ func main() {
 	http.HandleFunc("/login", authHandler.LoginHandler)
 	http.HandleFunc("/me", authMiddleware.RequireAuth(authHandler.MeHandler))
 	http.HandleFunc("/logout", authMiddleware.RequireAuth(authHandler.LogoutHandler))
+	http.HandleFunc("/activity-logs", authMiddleware.RequireAuth(activityHandler.ListActivityLogsHandler))
 	fmt.Println("Server çalışıyor: http://localhost:8080")
 
 	err = http.ListenAndServe(":8080", nil)
