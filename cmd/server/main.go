@@ -40,7 +40,7 @@ func main() {
 	bookService := services.NewBookService(bookRepo)
 	bookHandler := handlers.NewBookHandler(bookService)
 
-	userRepo := repositories.NewMemoryUserRepository()
+	userRepo := repositories.NewPostgresUserRepository(db)
 	userService := services.NewUserService(userRepo)
 	sessionService := services.NewSessionService()
 	authHandler := handlers.NewAuthHandler(userService, sessionService)
