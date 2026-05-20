@@ -1,66 +1,180 @@
-# YAPAY ZEKA İLE ADIM ADIM GO ÖĞRENİYORUM
-
 # BookHub
 
-BookHub, Go ile yazılmış küçük bir backend projesidir. Projenin amacı kitap kayıtlarını yönetmek için sade bir HTTP CRUD API geliştirmek ve ilerleyen bölümlerde katmanlı mimari, standart response yapısı, authentication, template, database, cache, concurrency ve test konularını adım adım uygulamaktır.
+BookHub, Go ile yazılmış bir kitap yönetim sistemidir. Projede hem JSON API hem de `html/template` ile hazırlanmış Web UI bulunur.
 
-## Mevcut Ozellikler
+Uygulama; PostgreSQL/GORM kalıcılığı, Redis tabanlı session storage, MongoDB activity log kayıtları, goroutine/channel ile çalışan async activity worker ve unit testlerle adım adım geliştirilmiş bir öğrenme projesidir.
 
-- Bellek uzerinde calisan kitap deposu
-- `Book` modeli
-- `BookRepository` interface'i
-- `MemoryBookRepository` implementasyonu
-- JSON request ve response destegi
-- Query parameter ile kitap ID okuma
-- Kitap listeleme, detay goruntuleme, olusturma, guncelleme ve silme
-- Temel HTTP status code kullanimi
+## Özellikler
 
-## Kullanilan Teknolojiler
+- Book CRUD API
+- Web üzerinden kitap listeleme, oluşturma, düzenleme ve silme
+- Kullanıcı register/login/logout akışı
+- Cookie tabanlı session yönetimi
+- Redis session storage
+- PostgreSQL/GORM persistence
+- MongoDB activity logs
+- Goroutine/channel ile async activity worker
+- Standart JSON response yapısı
+- Service, middleware ve activity worker unit testleri
+- Git learning tag ve branch sistemi
+
+## Teknolojiler
 
 - Go
 - `net/http`
-- `encoding/json`
+- `html/template`
+- PostgreSQL
+- GORM
+- Redis
+- MongoDB
+- bcrypt
+- Go testing package
 - Git
 
-## Endpointler
+## Gereksinimler
 
-| Method | Endpoint | Aciklama |
-| --- | --- | --- |
-| `GET` | `/books` | Tum kitaplari listeler |
-| `GET` | `/books?id=1` | ID degerine gore tek kitap getirir |
-| `POST` | `/books` | Yeni kitap olusturur |
-| `PUT` | `/books?id=1` | ID degerine gore kitap gunceller |
-| `DELETE` | `/books?id=1` | ID degerine gore kitap siler |
+- Go
+- PostgreSQL
+- Redis
+- MongoDB
+- Git
 
-## Calistirma
+## Kurulum
+
+Repoyu clone edin:
+
+```bash
+git clone <repo-url>
+cd BookHub
+```
+
+Ortam değişkenleri için örnek dosyayı kopyalayın:
+
+```bash
+cp .env.example .env
+```
+
+Gerekli environment değişkenleri:
+
+```env
+DATABASE_URL=postgres://username:password@localhost:5432/bookhub?sslmode=disable
+REDIS_ADDR=localhost:6379
+MONGO_URI=mongodb://localhost:27017
+MONGO_DATABASE=bookhub
+```
+
+`DATABASE_URL` değerindeki kullanıcı adı, şifre ve veritabanı adını kendi yerel PostgreSQL kurulumunuza göre düzenleyin.
+
+## Servisleri Çalıştırma
+
+PostgreSQL çalışıyor olmalı ve `DATABASE_URL` içinde belirtilen veritabanı erişilebilir durumda olmalıdır.
+
+Redis'i başlatın ve bağlantıyı kontrol edin:
+
+```bash
+brew services start redis
+redis-cli ping
+```
+
+Beklenen Redis cevabı:
+
+```text
+PONG
+```
+
+MongoDB'yi başlatın ve bağlantıyı kontrol edin:
+
+```bash
+brew services start mongodb-community@8.0
+mongosh --eval "db.runCommand({ ping: 1 })"
+```
+
+## Uygulamayı Çalıştırma
+
+Bağımlılıkları düzenleyin:
+
+```bash
+go mod tidy
+```
+
+Server'ı başlatın:
 
 ```bash
 go run ./cmd/server
 ```
 
-Server varsayilan olarak `http://localhost:8080` adresinde calisir.
+Beklenen başlangıç çıktıları:
 
-## Test
+- PostgreSQL bağlantısı başarılı
+- GORM PostgreSQL bağlantısı başarılı
+- GORM migration başarılı
+- Redis bağlantısı başarılı
+- MongoDB bağlantısı başarılı
+- Server çalışıyor
+
+Uygulama varsayılan olarak `http://localhost:8080` adresinde çalışır.
+
+## API Endpointleri
+
+| Method | Endpoint | Açıklama |
+| --- | --- | --- |
+| `GET` | `/` | Ana sayfa/metin endpointi |
+| `GET` | `/health` | Sağlık kontrolü |
+| `GET` | `/about` | Proje hakkında kısa bilgi |
+| `GET` | `/books` | Kitapları listeler |
+| `GET` | `/books?id=1` | Tek kitap getirir |
+| `POST` | `/books` | Yeni kitap oluşturur |
+| `PUT` | `/books?id=1` | Kitap günceller |
+| `DELETE` | `/books?id=1` | Kitap siler |
+| `POST` | `/register` | Kullanıcı oluşturur |
+| `POST` | `/login` | Giriş yapar ve session cookie döner |
+| `GET` | `/me` | Aktif kullanıcı bilgisini getirir |
+| `POST` | `/logout` | Session'ı siler |
+| `GET` | `/activity-logs` | Activity log kayıtlarını listeler |
+
+## Web Endpointleri
+
+| Method | Endpoint | Açıklama |
+| --- | --- | --- |
+| `GET` | `/web/books` | Kitap listesi sayfası |
+| `GET` | `/web/books/new` | Yeni kitap formu |
+| `POST` | `/web/books/new` | Yeni kitap oluşturma |
+| `GET` | `/web/books/edit?id=1` | Kitap düzenleme formu |
+| `POST` | `/web/books/edit?id=1` | Kitap düzenleme submit |
+| `POST` | `/web/books/delete?id=1` | Kitap silme |
+| `GET` | `/web/login` | Giriş formu |
+| `POST` | `/web/login` | Giriş submit |
+| `GET` | `/web/register` | Kayıt formu |
+| `POST` | `/web/register` | Kayıt submit |
+| `POST` | `/web/logout` | Web çıkış işlemi |
+
+## Örnek curl Komutları
+
+Register:
 
 ```bash
-go test ./...
+curl -X POST http://localhost:8080/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Ada Lovelace","email":"ada@example.com","password":"secret123"}'
 ```
 
-## curl Ornekleri
-
-Tum kitaplari listeleme:
+Login ve cookie kaydetme:
 
 ```bash
-curl http://localhost:8080/books
+curl -X POST http://localhost:8080/login \
+  -H "Content-Type: application/json" \
+  -c cookies.txt \
+  -d '{"email":"ada@example.com","password":"secret123"}'
 ```
 
-ID ile kitap getirme:
+Aktif kullanıcı:
 
 ```bash
-curl "http://localhost:8080/books?id=1"
+curl http://localhost:8080/me \
+  -b cookies.txt
 ```
 
-Yeni kitap olusturma:
+Kitap oluşturma:
 
 ```bash
 curl -X POST http://localhost:8080/books \
@@ -68,32 +182,69 @@ curl -X POST http://localhost:8080/books \
   -d '{"title":"Dune","author":"Frank Herbert","year":1965}'
 ```
 
-Kitap guncelleme:
+Activity logs:
 
 ```bash
-curl -X PUT "http://localhost:8080/books?id=1" \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Suç ve Ceza","author":"Fyodor Dostoyevski","year":1866}'
+curl http://localhost:8080/activity-logs \
+  -b cookies.txt
 ```
 
-Kitap silme:
+Daha detaylı örnekler için [docs/api-examples.md](docs/api-examples.md) dosyasına bakabilirsiniz.
+
+## Testler
+
+Tüm testleri çalıştırma:
 
 ```bash
-curl -X DELETE "http://localhost:8080/books?id=1"
+go test ./...
 ```
 
-## Git Akisi
+Servis testleri:
 
-Mevcut memory CRUD API hali `v0.1-memory-crud` tag'i ile sabitlenmistir. `main` branch'i stabil milestone'lari tutar. Yeni bolumler icin `feature/*` branch'leri kullanilir ve calisan bolumler tamamlandikca `main` uzerine alinip tag'lenir.
+```bash
+go test ./internal/services -cover
+```
 
-Planlanan branch sirasi:
+Middleware testleri:
 
-- `feature/02-handler-layer`
-- `feature/03-service-layer`
-- `feature/04-standard-response`
-- `feature/05-auth`
-- `feature/06-template`
-- `feature/07-database`
-- `feature/08-nosql-cache`
-- `feature/09-concurrency`
-- `feature/10-tests`
+```bash
+go test ./internal/middleware -cover
+```
+
+Activity worker testleri:
+
+```bash
+go test ./internal/activity -cover
+```
+
+## Git Öğrenme Sistemi
+
+BookHub, özellikleri küçük adımlarla öğrenmek için tag ve branch düzeniyle tutulur.
+
+- `feature/*` branch'leri yeni özellik geliştirme adımları için kullanılır.
+- `learning/*` branch'leri konu anlatımı ve adım adım öğrenme akışları için kullanılır.
+- `v0.1-memory-crud-learning-final`, Memory CRUD öğrenme bölümünün audit edilmiş final tag'idir.
+- Öğrenme audit notları için [docs/learning-audit.md](docs/learning-audit.md) dosyasına bakılabilir.
+
+## Sürüm Geçmişi
+
+- `v0.1` Memory CRUD
+- `v0.2` Handler Layer
+- `v0.3` Service Layer
+- `v0.4` Standard Response
+- `v0.5` Auth
+- `v0.6` Template
+- `v0.7` Database
+- `v0.8` GORM
+- `v0.9` Redis
+- `v0.10` MongoDB
+- `v0.11` Background Worker
+- `v0.12` Tests
+
+## Güvenlik Notları
+
+- `.env` commit edilmez.
+- Gerçek parola, token veya secret değerleri repoya eklenmez.
+- Kullanıcı parolaları bcrypt ile hashlenir.
+- Session bilgileri Redis'te TTL ile tutulur.
+- `cookies.txt` commit edilmez.
