@@ -1,3 +1,6 @@
+# YAPAY ZEKA İLE ADIM ADIM GO ÖĞRENİYORUM
+
+
 # BookHub
 
 BookHub, Go ile yazılmış bir kitap yönetim sistemidir. Projede hem JSON API hem de `html/template` ile hazırlanmış Web UI bulunur.
