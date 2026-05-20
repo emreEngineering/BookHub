@@ -4,6 +4,11 @@ BookHub, Go ile yazılmış bir kitap yönetim sistemidir. Projede hem JSON API 
 
 Uygulama; PostgreSQL/GORM kalıcılığı, Redis tabanlı session storage, MongoDB activity log kayıtları, goroutine/channel ile çalışan async activity worker ve unit testlerle adım adım geliştirilmiş bir öğrenme projesidir.
 
+## Final Release
+
+- Current stable release: `v1.0.0`
+- Release notes: [docs/release-notes-v1.0.0.md](docs/release-notes-v1.0.0.md)
+
 ## Özellikler
 
 - Book CRUD API
