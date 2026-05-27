@@ -3,7 +3,6 @@ package main
 import (
 	"BookHub/internal/activity"
 	"BookHub/internal/database"
-	"BookHub/internal/gormdb"
 	"BookHub/internal/middleware"
 	"BookHub/internal/mongodb"
 	"BookHub/internal/redisdb"
@@ -42,18 +41,6 @@ func main() {
 		return
 	}
 
-	gormDB, err := gormdb.Connect()
-	if err != nil {
-		fmt.Println("GORM database bağlantısı hatası:", err)
-		return
-	}
-
-	err = gormdb.AutoMigrate(gormDB)
-	if err != nil {
-		fmt.Println("GORM migration hatası:", err)
-		return
-	}
-
 	redisClient, err := redisdb.Connect()
 	if err != nil {
 		fmt.Println("Redis bağlantısı hatası:", err)
@@ -75,11 +62,11 @@ func main() {
 
 	activityHandler := handlers.NewActivityHandler(activityLogger)
 
-	bookRepo := repositories.NewGormBookRepository(gormDB)
+	bookRepo := repositories.NewPostgresBookRepository(db)
 	bookService := services.NewBookService(bookRepo)
 	bookHandler := handlers.NewBookHandler(bookService)
 
-	userRepo := repositories.NewGormUserRepository(gormDB)
+	userRepo := repositories.NewPostgresUserRepository(db)
 	userService := services.NewUserService(userRepo)
 	sessionService := services.NewRedisSessionService(redisClient)
 	authHandler := handlers.NewAuthHandler(userService, sessionService, activityLogger)
@@ -93,9 +80,9 @@ func main() {
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	http.HandleFunc("/books", bookHandler.BooksHandler)
 	http.HandleFunc("/web/books", webHandler.BooksPageHandler)
-	http.HandleFunc("/web/books/new", webHandler.BookCreatePageHandler)
-	http.HandleFunc("/web/books/edit", webHandler.BookEditPageHandler)
-	http.HandleFunc("/web/books/delete", webHandler.BookDeletePageHandler)
+	http.HandleFunc("/web/books/new", authMiddleware.RequireWebAuth(webHandler.BookCreatePageHandler))
+	http.HandleFunc("/web/books/edit", authMiddleware.RequireWebAuth(webHandler.BookEditPageHandler))
+	http.HandleFunc("/web/books/delete", authMiddleware.RequireWebAuth(webHandler.BookDeletePageHandler))
 	http.HandleFunc("/web/login", webHandler.LoginPageHandler)
 	http.HandleFunc("/web/register", webHandler.RegisterPageHandler)
 	http.HandleFunc("/web/logout", webHandler.LogoutPageHandler)

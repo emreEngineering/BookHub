@@ -59,7 +59,7 @@ func (r *PostgresUserRepository) FindByID(id int) (*models.User, error) {
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errors.New("kullanıcı bulunamadı")
+			return nil, ErrUserNotFound
 		}
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func (r *PostgresUserRepository) FindByEmail(email string) (*models.User, error)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errors.New("kullanıcı bulunamadı")
+			return nil, ErrUserNotFound
 		}
 		return nil, err
 	}

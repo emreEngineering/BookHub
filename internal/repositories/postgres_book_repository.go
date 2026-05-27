@@ -59,7 +59,7 @@ func (r *PostgresBookRepository) FindByID(id int) (*models.Book, error) {
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errors.New("kitap bulunamadı")
+			return nil, ErrBookNotFound
 		}
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (r *PostgresBookRepository) Update(id int, book models.Book) (models.Book, 
 	}
 
 	if rowsAffected == 0 {
-		return models.Book{}, errors.New("kitap bulunamadı")
+		return models.Book{}, ErrBookNotFound
 	}
 
 	book.ID = id
@@ -121,7 +121,7 @@ func (r *PostgresBookRepository) Delete(id int) error {
 	}
 
 	if rowsAffected == 0 {
-		return errors.New("kitap bulunamadı")
+		return ErrBookNotFound
 	}
 
 	return nil

@@ -2,7 +2,7 @@
 
 BookHub, Go ile yazılmış bir kitap yönetim sistemidir. Projede hem JSON API hem de `html/template` ile hazırlanmış Web UI bulunur.
 
-Uygulama; PostgreSQL/GORM kalıcılığı, Redis tabanlı session storage, MongoDB activity log kayıtları, goroutine/channel ile çalışan async activity worker ve unit testlerle adım adım geliştirilmiş bir öğrenme projesidir.
+Uygulama; `database/sql` ile açık SQL kullanan PostgreSQL kalıcılığı, Redis tabanlı session storage, MongoDB activity log kayıtları, goroutine/channel ile çalışan async activity worker ve unit testlerle adım adım geliştirilmiş bir öğrenme projesidir.
 
 ## Özellikler
 
@@ -11,7 +11,7 @@ Uygulama; PostgreSQL/GORM kalıcılığı, Redis tabanlı session storage, Mongo
 - Kullanıcı register/login/logout akışı
 - Cookie tabanlı session yönetimi
 - Redis session storage
-- PostgreSQL/GORM persistence
+- PostgreSQL persistence with `database/sql`
 - MongoDB activity logs
 - Goroutine/channel ile async activity worker
 - Standart JSON response yapısı
@@ -24,7 +24,7 @@ Uygulama; PostgreSQL/GORM kalıcılığı, Redis tabanlı session storage, Mongo
 - `net/http`
 - `html/template`
 - PostgreSQL
-- GORM
+- `database/sql`
 - Redis
 - MongoDB
 - bcrypt
@@ -106,8 +106,6 @@ go run ./cmd/server
 Beklenen başlangıç çıktıları:
 
 - PostgreSQL bağlantısı başarılı
-- GORM PostgreSQL bağlantısı başarılı
-- GORM migration başarılı
 - Redis bağlantısı başarılı
 - MongoDB bağlantısı başarılı
 - Server çalışıyor
@@ -137,11 +135,11 @@ Uygulama varsayılan olarak `http://localhost:8080` adresinde çalışır.
 | Method | Endpoint | Açıklama |
 | --- | --- | --- |
 | `GET` | `/web/books` | Kitap listesi sayfası |
-| `GET` | `/web/books/new` | Yeni kitap formu |
-| `POST` | `/web/books/new` | Yeni kitap oluşturma |
-| `GET` | `/web/books/edit?id=1` | Kitap düzenleme formu |
-| `POST` | `/web/books/edit?id=1` | Kitap düzenleme submit |
-| `POST` | `/web/books/delete?id=1` | Kitap silme |
+| `GET` | `/web/books/new` | Yeni kitap formu; login gerektirir |
+| `POST` | `/web/books/new` | Yeni kitap oluşturma; login gerektirir |
+| `GET` | `/web/books/edit?id=1` | Kitap düzenleme formu; login gerektirir |
+| `POST` | `/web/books/edit?id=1` | Kitap düzenleme submit; login gerektirir |
+| `POST` | `/web/books/delete?id=1` | Kitap silme; login gerektirir |
 | `GET` | `/web/login` | Giriş formu |
 | `POST` | `/web/login` | Giriş submit |
 | `GET` | `/web/register` | Kayıt formu |
@@ -240,6 +238,8 @@ BookHub, özellikleri küçük adımlarla öğrenmek için tag ve branch düzeni
 - `v0.10` MongoDB
 - `v0.11` Background Worker
 - `v0.12` Tests
+- `v0.13-gorm-final` Final GORM mimarisi
+- `v0.13-sql-final` Final `database/sql` mimarisi
 
 ## Güvenlik Notları
 

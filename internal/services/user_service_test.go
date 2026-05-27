@@ -1,10 +1,10 @@
 package services
 
 import (
-	"errors"
 	"testing"
 
 	"BookHub/internal/models"
+	"BookHub/internal/repositories"
 )
 
 type fakeUserRepository struct {
@@ -30,7 +30,7 @@ func (r *fakeUserRepository) FindByID(id int) (*models.User, error) {
 		}
 	}
 
-	return nil, errors.New("kullanıcı bulunamadı")
+	return nil, repositories.ErrUserNotFound
 }
 
 func (r *fakeUserRepository) FindByEmail(email string) (*models.User, error) {
@@ -40,7 +40,7 @@ func (r *fakeUserRepository) FindByEmail(email string) (*models.User, error) {
 		}
 	}
 
-	return nil, errors.New("kullanıcı bulunamadı")
+	return nil, repositories.ErrUserNotFound
 }
 
 func (r *fakeUserRepository) Create(user models.User) (models.User, error) {

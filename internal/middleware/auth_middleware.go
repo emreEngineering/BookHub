@@ -33,3 +33,21 @@ func (m *AuthMiddleware) RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 		next(w, r)
 	}
 }
+
+func (m *AuthMiddleware) RequireWebAuth(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie("session_id")
+		if err != nil {
+			http.Redirect(w, r, "/web/login", http.StatusSeeOther)
+			return
+		}
+
+		_, err = m.sessionService.GetUserID(cookie.Value)
+		if err != nil {
+			http.Redirect(w, r, "/web/login", http.StatusSeeOther)
+			return
+		}
+
+		next(w, r)
+	}
+}

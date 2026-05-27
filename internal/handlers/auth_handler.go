@@ -75,6 +75,7 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	sessionID, err := h.sessionService.CreateSession(user.ID)
 	if err != nil {
 		responses.Error(w, http.StatusUnauthorized, err.Error())
+		return
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -112,6 +113,7 @@ func (h *AuthHandler) MeHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := h.userService.GetUserByID(userID)
 	if err != nil {
 		responses.Error(w, http.StatusUnauthorized, "Giriş yapmalısınız")
+		return
 	}
 
 	responses.Success(w, http.StatusOK, "Kullanıcı getirildi", user)

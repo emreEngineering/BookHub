@@ -26,10 +26,10 @@ type UserService interface {
 }
 
 type DefaultUserService struct {
-	userRepo repositories.UserRepositories
+	userRepo repositories.UserRepository
 }
 
-func NewUserService(userRepo repositories.UserRepositories) *DefaultUserService {
+func NewUserService(userRepo repositories.UserRepository) *DefaultUserService {
 	return &DefaultUserService{
 		userRepo: userRepo,
 	}
@@ -44,6 +44,9 @@ func (s *DefaultUserService) Register(request RegisterRequest) (models.User, err
 	_, err = s.userRepo.FindByEmail(request.Email)
 	if err == nil {
 		return models.User{}, errors.New("bu email zaten kayıtlı")
+	}
+	if !errors.Is(err, repositories.ErrUserNotFound) {
+		return models.User{}, err
 	}
 
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
