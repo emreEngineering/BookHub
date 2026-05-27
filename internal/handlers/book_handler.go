@@ -33,7 +33,7 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		createdBook, err := h.bookService.CreateBook(book)
+		createdBook, err := h.bookService.CreateBook(r.Context(), book)
 		if err != nil {
 			responses.Error(w, http.StatusBadRequest, err.Error())
 			return
@@ -64,7 +64,7 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		updatedBook, err := h.bookService.UpdateBook(id, book)
+		updatedBook, err := h.bookService.UpdateBook(r.Context(), id, book)
 		if err != nil {
 			if errors.Is(err, repositories.ErrBookNotFound) {
 				responses.Error(w, http.StatusNotFound, "Kitap bulunamadı")
@@ -90,9 +90,13 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err = h.bookService.DeleteBook(id)
+		err = h.bookService.DeleteBook(r.Context(), id)
 		if err != nil {
-			responses.Error(w, http.StatusNotFound, "Kitap bulunamadı")
+			if errors.Is(err, repositories.ErrBookNotFound) {
+				responses.Error(w, http.StatusNotFound, "Kitap bulunamadı")
+				return
+			}
+			responses.Error(w, http.StatusInternalServerError, "Kitap silinemedi")
 			return
 		}
 
@@ -114,9 +118,13 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		book, err := h.bookService.GetBookByID(id)
+		book, err := h.bookService.GetBookByID(r.Context(), id)
 		if err != nil {
-			responses.Error(w, http.StatusNotFound, "Kitap bulunamadı")
+			if errors.Is(err, repositories.ErrBookNotFound) {
+				responses.Error(w, http.StatusNotFound, "Kitap bulunamadı")
+				return
+			}
+			responses.Error(w, http.StatusInternalServerError, "Kitap alınamadı")
 			return
 		}
 
@@ -124,7 +132,7 @@ func (h *BookHandler) BooksHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	books, err := h.bookService.GetAllBooks()
+	books, err := h.bookService.GetAllBooks(r.Context())
 	if err != nil {
 		responses.Error(w, http.StatusInternalServerError, "Kitaplar alınamadı")
 		return

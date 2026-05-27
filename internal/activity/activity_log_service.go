@@ -10,8 +10,8 @@ import (
 )
 
 type ActivityLogger interface {
-	Log(eventType string, message string, userID *int, metadata map[string]interface{}) error
-	FindLatest(limit int64) ([]ActivityLog, error)
+	Log(ctx context.Context, eventType string, message string, userID *int, metadata map[string]interface{}) error
+	FindLatest(ctx context.Context, limit int64) ([]ActivityLog, error)
 }
 
 type MongoActivityLogService struct {
@@ -24,7 +24,7 @@ func NewMongoActivityLogService(db *mongo.Database) *MongoActivityLogService {
 	}
 }
 
-func (s *MongoActivityLogService) Log(eventType string, message string, userID *int, metadata map[string]interface{}) error {
+func (s *MongoActivityLogService) Log(ctx context.Context, eventType string, message string, userID *int, metadata map[string]interface{}) error {
 	if metadata == nil {
 		metadata = map[string]interface{}{}
 	}
@@ -37,11 +37,11 @@ func (s *MongoActivityLogService) Log(eventType string, message string, userID *
 		CreatedAt: time.Now(),
 	}
 
-	_, err := s.collection.InsertOne(context.Background(), log)
+	_, err := s.collection.InsertOne(ctx, log)
 	return err
 }
 
-func (s *MongoActivityLogService) FindLatest(limit int64) ([]ActivityLog, error) {
+func (s *MongoActivityLogService) FindLatest(ctx context.Context, limit int64) ([]ActivityLog, error) {
 	if limit <= 0 {
 		limit = 20
 	}
@@ -50,14 +50,14 @@ func (s *MongoActivityLogService) FindLatest(limit int64) ([]ActivityLog, error)
 		SetSort(bson.D{{Key: "created_at", Value: -1}}).
 		SetLimit(limit)
 
-	cursor, err := s.collection.Find(context.Background(), bson.D{}, findOptions)
+	cursor, err := s.collection.Find(ctx, bson.D{}, findOptions)
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(context.Background())
+	defer cursor.Close(ctx)
 
 	logs := []ActivityLog{}
-	for cursor.Next(context.Background()) {
+	for cursor.Next(ctx) {
 		var log ActivityLog
 		err := cursor.Decode(&log)
 		if err != nil {

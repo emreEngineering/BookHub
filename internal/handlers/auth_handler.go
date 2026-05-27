@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -37,17 +38,11 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.userService.Register(request)
+	user, err := h.userService.Register(r.Context(), request)
 	if err != nil {
 		responses.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
-
-	h.logActivity("user_registered", "Kullanıcı kayıt oldu", &user.ID, map[string]interface{}{
-		"email": user.Email,
-		"name":  user.Name,
-		"role":  user.Role,
-	})
 
 	responses.Success(w, http.StatusCreated, "Kullanıcı oluşturuldu", user)
 }
@@ -66,13 +61,13 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.userService.Login(request)
+	user, err := h.userService.Login(r.Context(), request)
 	if err != nil {
 		responses.Error(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 
-	sessionID, err := h.sessionService.CreateSession(user.ID)
+	sessionID, err := h.sessionService.CreateSession(r.Context(), user.ID)
 	if err != nil {
 		responses.Error(w, http.StatusUnauthorized, err.Error())
 		return
@@ -85,10 +80,6 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   3600,
-	})
-
-	h.logActivity("user_login", "Kullanıcı giriş yaptı", &user.ID, map[string]interface{}{
-		"email": user.Email,
 	})
 
 	responses.Success(w, http.StatusOK, "Giriş başarılı", user)
@@ -105,12 +96,12 @@ func (h *AuthHandler) MeHandler(w http.ResponseWriter, r *http.Request) {
 		responses.Error(w, http.StatusUnauthorized, "Giriş yapmalısnız")
 		return
 	}
-	userID, err := h.sessionService.GetUserID(cookie.Value)
+	userID, err := h.sessionService.GetUserID(r.Context(), cookie.Value)
 	if err != nil {
 		responses.Error(w, http.StatusUnauthorized, "Giriş yapmalısınız")
 		return
 	}
-	user, err := h.userService.GetUserByID(userID)
+	user, err := h.userService.GetUserByID(r.Context(), userID)
 	if err != nil {
 		responses.Error(w, http.StatusUnauthorized, "Giriş yapmalısınız")
 		return
@@ -130,9 +121,9 @@ func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, _ := h.sessionService.GetUserID(cookie.Value)
+	userID, _ := h.sessionService.GetUserID(r.Context(), cookie.Value)
 
-	err = h.sessionService.DeleteSession(cookie.Value)
+	err = h.sessionService.DeleteSession(r.Context(), cookie.Value)
 	if err != nil {
 		responses.Error(w, http.StatusInternalServerError, "Çıkış yapılamadı")
 		return
@@ -151,15 +142,15 @@ func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	if userID != 0 {
 		userIDPtr = &userID
 	}
-	h.logActivity("user_logout", "Kullanıcı çıkış yaptı", userIDPtr, nil)
+	h.logActivity(r.Context(), "user_logout", "Kullanıcı çıkış yaptı", userIDPtr, nil)
 
 	responses.Success(w, http.StatusOK, "Çıkış başarılı", nil)
 }
 
-func (h *AuthHandler) logActivity(eventType string, message string, userID *int, metadata map[string]interface{}) {
+func (h *AuthHandler) logActivity(ctx context.Context, eventType string, message string, userID *int, metadata map[string]interface{}) {
 	if h.activityLogger == nil {
 		return
 	}
 
-	_ = h.activityLogger.Log(eventType, message, userID, metadata)
+	_ = h.activityLogger.Log(ctx, eventType, message, userID, metadata)
 }

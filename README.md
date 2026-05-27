@@ -57,6 +57,7 @@ cp .env.example .env
 Gerekli environment değişkenleri:
 
 ```env
+SERVER_ADDR=:8080
 DATABASE_URL=postgres://username:password@localhost:5432/bookhub?sslmode=disable
 REDIS_ADDR=localhost:6379
 MONGO_URI=mongodb://localhost:27017
@@ -121,9 +122,9 @@ Uygulama varsayılan olarak `http://localhost:8080` adresinde çalışır.
 | `GET` | `/about` | Proje hakkında kısa bilgi |
 | `GET` | `/books` | Kitapları listeler |
 | `GET` | `/books?id=1` | Tek kitap getirir |
-| `POST` | `/books` | Yeni kitap oluşturur |
-| `PUT` | `/books?id=1` | Kitap günceller |
-| `DELETE` | `/books?id=1` | Kitap siler |
+| `POST` | `/books` | Yeni kitap oluşturur; login gerektirir |
+| `PUT` | `/books?id=1` | Kitap günceller; login gerektirir |
+| `DELETE` | `/books?id=1` | Kitap siler; login gerektirir |
 | `POST` | `/register` | Kullanıcı oluşturur |
 | `POST` | `/login` | Giriş yapar ve session cookie döner |
 | `GET` | `/me` | Aktif kullanıcı bilgisini getirir |
@@ -177,6 +178,7 @@ Kitap oluşturma:
 ```bash
 curl -X POST http://localhost:8080/books \
   -H "Content-Type: application/json" \
+  -b cookies.txt \
   -d '{"title":"Dune","author":"Frank Herbert","year":1965}'
 ```
 

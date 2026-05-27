@@ -23,13 +23,13 @@ func NewRedisSessionService(client *redis.Client) *RedisSessionService {
 	}
 }
 
-func (s *RedisSessionService) CreateSession(userID int) (string, error) {
+func (s *RedisSessionService) CreateSession(ctx context.Context, userID int) (string, error) {
 	sessionID, err := generateRedisSessionID()
 	if err != nil {
 		return "", err
 	}
 
-	err = s.client.Set(context.Background(), sessionKey(sessionID), strconv.Itoa(userID), s.ttl).Err()
+	err = s.client.Set(ctx, sessionKey(sessionID), strconv.Itoa(userID), s.ttl).Err()
 	if err != nil {
 		return "", err
 	}
@@ -37,8 +37,8 @@ func (s *RedisSessionService) CreateSession(userID int) (string, error) {
 	return sessionID, nil
 }
 
-func (s *RedisSessionService) GetUserID(sessionID string) (int, error) {
-	userIDValue, err := s.client.Get(context.Background(), sessionKey(sessionID)).Result()
+func (s *RedisSessionService) GetUserID(ctx context.Context, sessionID string) (int, error) {
+	userIDValue, err := s.client.Get(ctx, sessionKey(sessionID)).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return 0, errors.New("geçersiz session")
@@ -54,8 +54,8 @@ func (s *RedisSessionService) GetUserID(sessionID string) (int, error) {
 	return userID, nil
 }
 
-func (s *RedisSessionService) DeleteSession(sessionID string) error {
-	return s.client.Del(context.Background(), sessionKey(sessionID)).Err()
+func (s *RedisSessionService) DeleteSession(ctx context.Context, sessionID string) error {
+	return s.client.Del(ctx, sessionKey(sessionID)).Err()
 }
 
 func sessionKey(sessionID string) string {

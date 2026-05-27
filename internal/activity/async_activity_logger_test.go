@@ -1,6 +1,7 @@
 package activity
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"testing"
@@ -20,7 +21,7 @@ func newFakeActivityLogger() *fakeActivityLogger {
 	return &fakeActivityLogger{}
 }
 
-func (l *fakeActivityLogger) Log(eventType string, message string, userID *int, metadata map[string]interface{}) error {
+func (l *fakeActivityLogger) Log(ctx context.Context, eventType string, message string, userID *int, metadata map[string]interface{}) error {
 	if l.logErr != nil {
 		return l.logErr
 	}
@@ -37,7 +38,7 @@ func (l *fakeActivityLogger) Log(eventType string, message string, userID *int, 
 	return nil
 }
 
-func (l *fakeActivityLogger) FindLatest(limit int64) ([]ActivityLog, error) {
+func (l *fakeActivityLogger) FindLatest(ctx context.Context, limit int64) ([]ActivityLog, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -69,7 +70,7 @@ func TestAsyncActivityLogger_LogProcessesEvent(t *testing.T) {
 		"source": "test",
 	}
 
-	err := logger.Log("test_event", "Test event", &userID, metadata)
+	err := logger.Log(context.Background(), "test_event", "Test event", &userID, metadata)
 	if err != nil {
 		t.Fatalf("Log returned error: %v", err)
 	}
@@ -98,7 +99,7 @@ func TestAsyncActivityLogger_FindLatestDelegatesToBase(t *testing.T) {
 	base.latest = []ActivityLog{{Type: "latest_event"}}
 	logger := NewAsyncActivityLogger(base, 10)
 
-	logs, err := logger.FindLatest(5)
+	logs, err := logger.FindLatest(context.Background(), 5)
 	if err != nil {
 		t.Fatalf("FindLatest returned error: %v", err)
 	}
@@ -121,12 +122,12 @@ func TestAsyncActivityLogger_QueueFullReturnsError(t *testing.T) {
 	base := newFakeActivityLogger()
 	logger := NewAsyncActivityLogger(base, 1)
 
-	err := logger.Log("first", "First", nil, nil)
+	err := logger.Log(context.Background(), "first", "First", nil, nil)
 	if err != nil {
 		t.Fatalf("first Log returned error: %v", err)
 	}
 
-	err = logger.Log("second", "Second", nil, nil)
+	err = logger.Log(context.Background(), "second", "Second", nil, nil)
 	if err == nil {
 		t.Fatal("expected queue full error")
 	}
@@ -154,7 +155,7 @@ func TestAsyncActivityLogger_LogErrorDoesNotStopWorker(t *testing.T) {
 	logger.Start()
 	defer logger.Stop()
 
-	err := logger.Log("test_event", "Test event", nil, nil)
+	err := logger.Log(context.Background(), "test_event", "Test event", nil, nil)
 	if err != nil {
 		t.Fatalf("Log returned error: %v", err)
 	}

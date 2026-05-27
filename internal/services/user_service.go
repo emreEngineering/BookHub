@@ -1,8 +1,10 @@
 package services
 
 import (
+	"context"
 	"errors"
 
+	"BookHub/internal/activity"
 	"BookHub/internal/models"
 	"BookHub/internal/repositories"
 	"golang.org/x/crypto/bcrypt"
@@ -19,31 +21,38 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 type UserService interface {
-	Register(request RegisterRequest) (models.User, error)
-	Login(request LoginRequest) (models.User, error)
-	GetAllUsers() ([]models.User, error)
-	GetUserByID(id int) (*models.User, error)
+	Register(ctx context.Context, request RegisterRequest) (models.User, error)
+	Login(ctx context.Context, request LoginRequest) (models.User, error)
+	GetAllUsers(ctx context.Context) ([]models.User, error)
+	GetUserByID(ctx context.Context, id int) (*models.User, error)
 }
 
 type DefaultUserService struct {
-	userRepo repositories.UserRepository
+	userRepo       repositories.UserRepository
+	activityLogger activity.ActivityLogger
 }
 
-func NewUserService(userRepo repositories.UserRepository) *DefaultUserService {
-	return &DefaultUserService{
+func NewUserService(userRepo repositories.UserRepository, activityLoggers ...activity.ActivityLogger) *DefaultUserService {
+	service := &DefaultUserService{
 		userRepo: userRepo,
 	}
+
+	if len(activityLoggers) > 0 {
+		service.activityLogger = activityLoggers[0]
+	}
+
+	return service
 }
 
-func (s *DefaultUserService) Register(request RegisterRequest) (models.User, error) {
+func (s *DefaultUserService) Register(ctx context.Context, request RegisterRequest) (models.User, error) {
 	err := validateRegisterRequest(request)
 	if err != nil {
 		return models.User{}, err
 	}
 
-	_, err = s.userRepo.FindByEmail(request.Email)
+	_, err = s.userRepo.FindByEmail(ctx, request.Email)
 	if err == nil {
-		return models.User{}, errors.New("bu email zaten kayıtlı")
+		return models.User{}, repositories.ErrDuplicateEmail
 	}
 	if !errors.Is(err, repositories.ErrUserNotFound) {
 		return models.User{}, err
@@ -61,16 +70,30 @@ func (s *DefaultUserService) Register(request RegisterRequest) (models.User, err
 		Role:         "user",
 	}
 
-	return s.userRepo.Create(user)
+	createdUser, err := s.userRepo.Create(ctx, user)
+	if err != nil {
+		if errors.Is(err, repositories.ErrDuplicateEmail) {
+			return models.User{}, repositories.ErrDuplicateEmail
+		}
+		return models.User{}, err
+	}
+
+	s.logActivity(ctx, "user_registered", "Kullanıcı kayıt oldu", &createdUser.ID, map[string]interface{}{
+		"email": createdUser.Email,
+		"name":  createdUser.Name,
+		"role":  createdUser.Role,
+	})
+
+	return createdUser, nil
 }
 
-func (s *DefaultUserService) Login(request LoginRequest) (models.User, error) {
+func (s *DefaultUserService) Login(ctx context.Context, request LoginRequest) (models.User, error) {
 	err := validateLoginRequest(request)
 
 	if err != nil {
 		return models.User{}, err
 	}
-	user, err := s.userRepo.FindByEmail(request.Email)
+	user, err := s.userRepo.FindByEmail(ctx, request.Email)
 	if err != nil {
 		return models.User{}, errors.New("email veya şifre hatalı")
 	}
@@ -78,6 +101,11 @@ func (s *DefaultUserService) Login(request LoginRequest) (models.User, error) {
 	if err != nil {
 		return models.User{}, errors.New("email veya şifre hatalı")
 	}
+
+	s.logActivity(ctx, "user_login", "Kullanıcı giriş yaptı", &user.ID, map[string]interface{}{
+		"email": user.Email,
+	})
+
 	return *user, nil
 }
 
@@ -91,12 +119,12 @@ func validateLoginRequest(request LoginRequest) error {
 	return nil
 }
 
-func (s *DefaultUserService) GetAllUsers() ([]models.User, error) {
-	return s.userRepo.FindAll()
+func (s *DefaultUserService) GetAllUsers(ctx context.Context) ([]models.User, error) {
+	return s.userRepo.FindAll(ctx)
 }
 
-func (s *DefaultUserService) GetUserByID(id int) (*models.User, error) {
-	return s.userRepo.FindByID(id)
+func (s *DefaultUserService) GetUserByID(ctx context.Context, id int) (*models.User, error) {
+	return s.userRepo.FindByID(ctx, id)
 }
 
 func validateRegisterRequest(request RegisterRequest) error {
@@ -113,4 +141,12 @@ func validateRegisterRequest(request RegisterRequest) error {
 	}
 
 	return nil
+}
+
+func (s *DefaultUserService) logActivity(ctx context.Context, eventType string, message string, userID *int, metadata map[string]interface{}) {
+	if s.activityLogger == nil {
+		return
+	}
+
+	_ = s.activityLogger.Log(ctx, eventType, message, userID, metadata)
 }

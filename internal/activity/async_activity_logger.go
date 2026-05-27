@@ -1,6 +1,7 @@
 package activity
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -63,7 +64,7 @@ func (l *AsyncActivityLogger) Stop() {
 	})
 }
 
-func (l *AsyncActivityLogger) Log(eventType string, message string, userID *int, metadata map[string]interface{}) error {
+func (l *AsyncActivityLogger) Log(ctx context.Context, eventType string, message string, userID *int, metadata map[string]interface{}) error {
 	l.mu.Lock()
 	stopped := l.stopped
 	l.mu.Unlock()
@@ -82,13 +83,15 @@ func (l *AsyncActivityLogger) Log(eventType string, message string, userID *int,
 	select {
 	case l.events <- event:
 		return nil
+	case <-ctx.Done():
+		return ctx.Err()
 	default:
 		return errors.New("activity log kuyruğu dolu")
 	}
 }
 
-func (l *AsyncActivityLogger) FindLatest(limit int64) ([]ActivityLog, error) {
-	return l.base.FindLatest(limit)
+func (l *AsyncActivityLogger) FindLatest(ctx context.Context, limit int64) ([]ActivityLog, error) {
+	return l.base.FindLatest(ctx, limit)
 }
 
 func (l *AsyncActivityLogger) drain() {
@@ -103,7 +106,7 @@ func (l *AsyncActivityLogger) drain() {
 }
 
 func (l *AsyncActivityLogger) write(event ActivityEvent) {
-	err := l.base.Log(event.Type, event.Message, event.UserID, event.Metadata)
+	err := l.base.Log(context.Background(), event.Type, event.Message, event.UserID, event.Metadata)
 	if err != nil {
 		fmt.Println("Activity log yazılamadı:", err)
 	}

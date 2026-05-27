@@ -57,6 +57,7 @@ Kitap oluşturma:
 ```bash
 curl -X POST http://localhost:8080/books \
   -H "Content-Type: application/json" \
+  -b cookies.txt \
   -d '{"title":"Dune","author":"Frank Herbert","year":1965}'
 ```
 
@@ -65,13 +66,15 @@ Kitap güncelleme:
 ```bash
 curl -X PUT "http://localhost:8080/books?id=1" \
   -H "Content-Type: application/json" \
+  -b cookies.txt \
   -d '{"title":"Dune Messiah","author":"Frank Herbert","year":1969}'
 ```
 
 Kitap silme:
 
 ```bash
-curl -X DELETE "http://localhost:8080/books?id=1"
+curl -X DELETE "http://localhost:8080/books?id=1" \
+  -b cookies.txt
 ```
 
 ## Activity Logs

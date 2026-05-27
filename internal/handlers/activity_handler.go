@@ -42,7 +42,7 @@ func (h *ActivityHandler) ListActivityLogsHandler(w http.ResponseWriter, r *http
 		limit = 100
 	}
 
-	logs, err := h.activityLogger.FindLatest(limit)
+	logs, err := h.activityLogger.FindLatest(r.Context(), limit)
 	if err != nil {
 		responses.Error(w, http.StatusInternalServerError, "Activity loglar alınamadı")
 		return

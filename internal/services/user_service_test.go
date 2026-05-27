@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"testing"
 
 	"BookHub/internal/models"
@@ -19,11 +20,11 @@ func newFakeUserRepository() *fakeUserRepository {
 	}
 }
 
-func (r *fakeUserRepository) FindAll() ([]models.User, error) {
+func (r *fakeUserRepository) FindAll(ctx context.Context) ([]models.User, error) {
 	return r.users, nil
 }
 
-func (r *fakeUserRepository) FindByID(id int) (*models.User, error) {
+func (r *fakeUserRepository) FindByID(ctx context.Context, id int) (*models.User, error) {
 	for _, user := range r.users {
 		if user.ID == id {
 			return &user, nil
@@ -33,7 +34,7 @@ func (r *fakeUserRepository) FindByID(id int) (*models.User, error) {
 	return nil, repositories.ErrUserNotFound
 }
 
-func (r *fakeUserRepository) FindByEmail(email string) (*models.User, error) {
+func (r *fakeUserRepository) FindByEmail(ctx context.Context, email string) (*models.User, error) {
 	for _, user := range r.users {
 		if user.Email == email {
 			return &user, nil
@@ -43,7 +44,7 @@ func (r *fakeUserRepository) FindByEmail(email string) (*models.User, error) {
 	return nil, repositories.ErrUserNotFound
 }
 
-func (r *fakeUserRepository) Create(user models.User) (models.User, error) {
+func (r *fakeUserRepository) Create(ctx context.Context, user models.User) (models.User, error) {
 	user.ID = r.nextID
 	r.nextID++
 	if user.Role == "" {
@@ -56,7 +57,7 @@ func (r *fakeUserRepository) Create(user models.User) (models.User, error) {
 func TestUserService_Register_Success(t *testing.T) {
 	service := NewUserService(newFakeUserRepository())
 
-	user, err := service.Register(RegisterRequest{
+	user, err := service.Register(context.Background(), RegisterRequest{
 		Name:     "Test User",
 		Email:    "test@example.com",
 		Password: "123456",
@@ -77,7 +78,7 @@ func TestUserService_Register_Success(t *testing.T) {
 func TestUserService_Register_ValidationError(t *testing.T) {
 	service := NewUserService(newFakeUserRepository())
 
-	_, err := service.Register(RegisterRequest{
+	_, err := service.Register(context.Background(), RegisterRequest{
 		Name:     "",
 		Email:    "test@example.com",
 		Password: "123456",
@@ -95,12 +96,12 @@ func TestUserService_Register_DuplicateEmail(t *testing.T) {
 		Password: "123456",
 	}
 
-	_, err := service.Register(request)
+	_, err := service.Register(context.Background(), request)
 	if err != nil {
 		t.Fatalf("first Register returned error: %v", err)
 	}
 
-	_, err = service.Register(request)
+	_, err = service.Register(context.Background(), request)
 	if err == nil {
 		t.Fatal("expected duplicate email error")
 	}
@@ -109,7 +110,7 @@ func TestUserService_Register_DuplicateEmail(t *testing.T) {
 func TestUserService_Login_Success(t *testing.T) {
 	service := NewUserService(newFakeUserRepository())
 
-	registeredUser, err := service.Register(RegisterRequest{
+	registeredUser, err := service.Register(context.Background(), RegisterRequest{
 		Name:     "Login User",
 		Email:    "login@example.com",
 		Password: "123456",
@@ -118,7 +119,7 @@ func TestUserService_Login_Success(t *testing.T) {
 		t.Fatalf("Register returned error: %v", err)
 	}
 
-	user, err := service.Login(LoginRequest{
+	user, err := service.Login(context.Background(), LoginRequest{
 		Email:    "login@example.com",
 		Password: "123456",
 	})
@@ -134,7 +135,7 @@ func TestUserService_Login_Success(t *testing.T) {
 func TestUserService_Login_WrongPassword(t *testing.T) {
 	service := NewUserService(newFakeUserRepository())
 
-	_, err := service.Register(RegisterRequest{
+	_, err := service.Register(context.Background(), RegisterRequest{
 		Name:     "Login User",
 		Email:    "wrong-password@example.com",
 		Password: "123456",
@@ -143,7 +144,7 @@ func TestUserService_Login_WrongPassword(t *testing.T) {
 		t.Fatalf("Register returned error: %v", err)
 	}
 
-	_, err = service.Login(LoginRequest{
+	_, err = service.Login(context.Background(), LoginRequest{
 		Email:    "wrong-password@example.com",
 		Password: "wrong",
 	})
@@ -155,7 +156,7 @@ func TestUserService_Login_WrongPassword(t *testing.T) {
 func TestUserService_Login_UserNotFound(t *testing.T) {
 	service := NewUserService(newFakeUserRepository())
 
-	_, err := service.Login(LoginRequest{
+	_, err := service.Login(context.Background(), LoginRequest{
 		Email:    "missing@example.com",
 		Password: "123456",
 	})
@@ -167,7 +168,7 @@ func TestUserService_Login_UserNotFound(t *testing.T) {
 func TestUserService_GetUserByID_Found(t *testing.T) {
 	service := NewUserService(newFakeUserRepository())
 
-	registeredUser, err := service.Register(RegisterRequest{
+	registeredUser, err := service.Register(context.Background(), RegisterRequest{
 		Name:     "Lookup User",
 		Email:    "lookup@example.com",
 		Password: "123456",
@@ -176,7 +177,7 @@ func TestUserService_GetUserByID_Found(t *testing.T) {
 		t.Fatalf("Register returned error: %v", err)
 	}
 
-	user, err := service.GetUserByID(registeredUser.ID)
+	user, err := service.GetUserByID(context.Background(), registeredUser.ID)
 	if err != nil {
 		t.Fatalf("GetUserByID returned error: %v", err)
 	}
@@ -189,7 +190,7 @@ func TestUserService_GetUserByID_Found(t *testing.T) {
 func TestUserService_GetUserByID_NotFound(t *testing.T) {
 	service := NewUserService(newFakeUserRepository())
 
-	user, err := service.GetUserByID(999)
+	user, err := service.GetUserByID(context.Background(), 999)
 	if err == nil {
 		t.Fatal("expected missing user error")
 	}

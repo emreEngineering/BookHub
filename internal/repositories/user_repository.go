@@ -1,10 +1,14 @@
 package repositories
 
-import "BookHub/internal/models"
+import (
+	"context"
+
+	"BookHub/internal/models"
+)
 
 type UserRepository interface {
-	FindAll() ([]models.User, error)
-	FindByID(id int) (*models.User, error)
-	FindByEmail(email string) (*models.User, error)
-	Create(user models.User) (models.User, error)
+	FindAll(ctx context.Context) ([]models.User, error)
+	FindByID(ctx context.Context, id int) (*models.User, error)
+	FindByEmail(ctx context.Context, email string) (*models.User, error)
+	Create(ctx context.Context, user models.User) (models.User, error)
 }
