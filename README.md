@@ -5,7 +5,7 @@
 
 BookHub, Go ile yazılmış bir kitap yönetim sistemidir. Projede hem JSON API hem de `html/template` ile hazırlanmış Web UI bulunur.
 
-Uygulama; PostgreSQL/GORM kalıcılığı, Redis tabanlı session storage, MongoDB activity log kayıtları, goroutine/channel ile çalışan async activity worker ve unit testlerle adım adım geliştirilmiş bir öğrenme projesidir.
+Uygulama; `database/sql` ile açık SQL kullanan PostgreSQL kalıcılığı, Redis tabanlı session storage, MongoDB activity log kayıtları, goroutine/channel ile çalışan async activity worker ve unit testlerle adım adım geliştirilmiş bir öğrenme projesidir.
 
 ## Final Release
 
@@ -19,7 +19,7 @@ Uygulama; PostgreSQL/GORM kalıcılığı, Redis tabanlı session storage, Mongo
 - Kullanıcı register/login/logout akışı
 - Cookie tabanlı session yönetimi
 - Redis session storage
-- PostgreSQL/GORM persistence
+- PostgreSQL persistence with `database/sql`
 - MongoDB activity logs
 - Goroutine/channel ile async activity worker
 - Standart JSON response yapısı
@@ -32,7 +32,7 @@ Uygulama; PostgreSQL/GORM kalıcılığı, Redis tabanlı session storage, Mongo
 - `net/http`
 - `html/template`
 - PostgreSQL
-- GORM
+- `database/sql`
 - Redis
 - MongoDB
 - bcrypt
@@ -65,6 +65,7 @@ cp .env.example .env
 Gerekli environment değişkenleri:
 
 ```env
+SERVER_ADDR=:8080
 DATABASE_URL=postgres://username:password@localhost:5432/bookhub?sslmode=disable
 REDIS_ADDR=localhost:6379
 MONGO_URI=mongodb://localhost:27017
@@ -114,8 +115,6 @@ go run ./cmd/server
 Beklenen başlangıç çıktıları:
 
 - PostgreSQL bağlantısı başarılı
-- GORM PostgreSQL bağlantısı başarılı
-- GORM migration başarılı
 - Redis bağlantısı başarılı
 - MongoDB bağlantısı başarılı
 - Server çalışıyor
@@ -131,9 +130,9 @@ Uygulama varsayılan olarak `http://localhost:8080` adresinde çalışır.
 | `GET` | `/about` | Proje hakkında kısa bilgi |
 | `GET` | `/books` | Kitapları listeler |
 | `GET` | `/books?id=1` | Tek kitap getirir |
-| `POST` | `/books` | Yeni kitap oluşturur |
-| `PUT` | `/books?id=1` | Kitap günceller |
-| `DELETE` | `/books?id=1` | Kitap siler |
+| `POST` | `/books` | Yeni kitap oluşturur; login gerektirir |
+| `PUT` | `/books?id=1` | Kitap günceller; login gerektirir |
+| `DELETE` | `/books?id=1` | Kitap siler; login gerektirir |
 | `POST` | `/register` | Kullanıcı oluşturur |
 | `POST` | `/login` | Giriş yapar ve session cookie döner |
 | `GET` | `/me` | Aktif kullanıcı bilgisini getirir |
@@ -145,11 +144,11 @@ Uygulama varsayılan olarak `http://localhost:8080` adresinde çalışır.
 | Method | Endpoint | Açıklama |
 | --- | --- | --- |
 | `GET` | `/web/books` | Kitap listesi sayfası |
-| `GET` | `/web/books/new` | Yeni kitap formu |
-| `POST` | `/web/books/new` | Yeni kitap oluşturma |
-| `GET` | `/web/books/edit?id=1` | Kitap düzenleme formu |
-| `POST` | `/web/books/edit?id=1` | Kitap düzenleme submit |
-| `POST` | `/web/books/delete?id=1` | Kitap silme |
+| `GET` | `/web/books/new` | Yeni kitap formu; login gerektirir |
+| `POST` | `/web/books/new` | Yeni kitap oluşturma; login gerektirir |
+| `GET` | `/web/books/edit?id=1` | Kitap düzenleme formu; login gerektirir |
+| `POST` | `/web/books/edit?id=1` | Kitap düzenleme submit; login gerektirir |
+| `POST` | `/web/books/delete?id=1` | Kitap silme; login gerektirir |
 | `GET` | `/web/login` | Giriş formu |
 | `POST` | `/web/login` | Giriş submit |
 | `GET` | `/web/register` | Kayıt formu |
@@ -187,6 +186,7 @@ Kitap oluşturma:
 ```bash
 curl -X POST http://localhost:8080/books \
   -H "Content-Type: application/json" \
+  -b cookies.txt \
   -d '{"title":"Dune","author":"Frank Herbert","year":1965}'
 ```
 
@@ -198,6 +198,43 @@ curl http://localhost:8080/activity-logs \
 ```
 
 Daha detaylı örnekler için [docs/api-examples.md](docs/api-examples.md) dosyasına bakabilirsiniz.
+
+## Öğrenme Sırası
+
+Bu projeyi en verimli şekilde öğrenmek için önce basit HTTP akışını, sonra katmanları, en son dış servisleri okuyun. Her adımda şu soruları sorun: Bu dosyanın tek sorumluluğu ne? Bu katman hangi katmana bağımlı? Bu iş burada mı olmalı, yoksa bir alt veya üst katmanda mı?
+
+1. `/books` API akışını inceleyin.
+   Başlangıç dosyaları: `cmd/server/main.go`, `internal/handlers/book_handler.go`, `internal/responses/response.go`.
+
+2. Domain modellerini okuyun.
+   Başlangıç dosyaları: `internal/models/book.go`, `internal/models/user.go`.
+
+3. Service layer mantığını öğrenin.
+   Başlangıç dosyaları: `internal/services/book_services.go`, `internal/services/user_service.go`.
+
+4. Repository ve SQL katmanına geçin.
+   Başlangıç dosyaları: `internal/repositories/postgres_book_repository.go`, `internal/repositories/postgres_user_repository.go`, `internal/database/database.go`, `internal/database/migrations.go`.
+
+5. `context.Context` akışını takip edin.
+   Akış: `r.Context()` -> service -> repository -> PostgreSQL/Redis/MongoDB.
+
+6. Auth ve session mekanizmasını öğrenin.
+   Başlangıç dosyaları: `internal/handlers/auth_handler.go`, `internal/services/redis_session_service.go`, `internal/middleware/auth_middleware.go`, `internal/requestcontext/user.go`.
+
+7. Web template tarafını inceleyin.
+   Başlangıç dosyaları: `internal/handlers/web_handler.go`, `templates/`.
+
+8. MongoDB activity log yapısını okuyun.
+   Başlangıç dosyaları: `internal/activity/`, `internal/mongodb/mongodb.go`.
+
+9. Async worker, goroutine ve channel kullanımını öğrenin.
+   Başlangıç dosyası: `internal/activity/async_activity_logger.go`.
+
+10. Config ve server startup akışını inceleyin.
+    Başlangıç dosyaları: `internal/config/config.go`, `cmd/server/main.go`.
+
+11. Testleri katman katman okuyun.
+    Başlangıç dosyaları: `internal/services/*_test.go`, `internal/middleware/*_test.go`, `internal/activity/*_test.go`.
 
 ## Testler
 
@@ -248,6 +285,8 @@ BookHub, özellikleri küçük adımlarla öğrenmek için tag ve branch düzeni
 - `v0.10` MongoDB
 - `v0.11` Background Worker
 - `v0.12` Tests
+- `v0.13-gorm-final` Final GORM mimarisi
+- `v0.13-sql-final` Final `database/sql` mimarisi
 
 ## Güvenlik Notları
 

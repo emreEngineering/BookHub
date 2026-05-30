@@ -1,8 +1,11 @@
 package database
 
-import "database/sql"
+import (
+	"context"
+	"database/sql"
+)
 
-func Migrate(db *sql.DB) error {
+func Migrate(ctx context.Context, db *sql.DB) error {
 	queries := []string{
 		`
 	CREATE TABLE IF NOT EXISTS books(
@@ -26,7 +29,7 @@ func Migrate(db *sql.DB) error {
 	}
 
 	for _, query := range queries {
-		_, err := db.Exec(query)
+		_, err := db.ExecContext(ctx, query)
 		if err != nil {
 			return err
 		}

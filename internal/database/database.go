@@ -4,19 +4,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"os"
 
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
-func Connect() (*sql.DB, error) {
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println(".env dosyası yüklenemedi, ortam değişkenleri kullanılacak")
-	}
-
-	databaseURL := os.Getenv("DATABASE_URL")
+func Connect(databaseURL string) (*sql.DB, error) {
 	if databaseURL == "" {
 		return nil, errors.New("DATABASE_URL bulunamadı")
 	}

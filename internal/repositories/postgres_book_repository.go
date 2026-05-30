@@ -1,6 +1,8 @@
 package repositories
 
 import (
+	"context"
+
 	"BookHub/internal/models"
 	"database/sql"
 	"errors"
@@ -16,8 +18,8 @@ func NewPostgresBookRepository(db *sql.DB) *PostgresBookRepository {
 	}
 }
 
-func (r *PostgresBookRepository) FindAll() ([]models.Book, error) {
-	rows, err := r.db.Query(`
+func (r *PostgresBookRepository) FindAll(ctx context.Context) ([]models.Book, error) {
+	rows, err := r.db.QueryContext(ctx, `
 		SELECT id, title, author, year
 		FROM books
 		ORDER BY id
@@ -48,10 +50,10 @@ func (r *PostgresBookRepository) FindAll() ([]models.Book, error) {
 	return books, nil
 }
 
-func (r *PostgresBookRepository) FindByID(id int) (*models.Book, error) {
+func (r *PostgresBookRepository) FindByID(ctx context.Context, id int) (*models.Book, error) {
 	var book models.Book
 
-	err := r.db.QueryRow(`
+	err := r.db.QueryRowContext(ctx, `
 		SELECT id, title, author, year
 		FROM books
 		WHERE id = $1
@@ -59,15 +61,15 @@ func (r *PostgresBookRepository) FindByID(id int) (*models.Book, error) {
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errors.New("kitap bulunamadı")
+			return nil, ErrBookNotFound
 		}
 		return nil, err
 	}
 	return &book, nil
 }
 
-func (r *PostgresBookRepository) Create(book models.Book) (models.Book, error) {
-	err := r.db.QueryRow(`
+func (r *PostgresBookRepository) Create(ctx context.Context, book models.Book) (models.Book, error) {
+	err := r.db.QueryRowContext(ctx, `
 		INSERT INTO books (title, author, year)
 		VALUES ($1, $2, $3)
 		RETURNING id
@@ -80,8 +82,8 @@ func (r *PostgresBookRepository) Create(book models.Book) (models.Book, error) {
 	return book, nil
 }
 
-func (r *PostgresBookRepository) Update(id int, book models.Book) (models.Book, error) {
-	result, err := r.db.Exec(`
+func (r *PostgresBookRepository) Update(ctx context.Context, id int, book models.Book) (models.Book, error) {
+	result, err := r.db.ExecContext(ctx, `
 		UPDATE books
 		SET title = $1, author = $2, year = $3
 		WHERE id = $4
@@ -97,7 +99,7 @@ func (r *PostgresBookRepository) Update(id int, book models.Book) (models.Book, 
 	}
 
 	if rowsAffected == 0 {
-		return models.Book{}, errors.New("kitap bulunamadı")
+		return models.Book{}, ErrBookNotFound
 	}
 
 	book.ID = id
@@ -105,8 +107,8 @@ func (r *PostgresBookRepository) Update(id int, book models.Book) (models.Book, 
 	return book, nil
 }
 
-func (r *PostgresBookRepository) Delete(id int) error {
-	result, err := r.db.Exec(`
+func (r *PostgresBookRepository) Delete(ctx context.Context, id int) error {
+	result, err := r.db.ExecContext(ctx, `
 		DELETE FROM books
 		WHERE id = $1
 	`, id)
@@ -121,7 +123,7 @@ func (r *PostgresBookRepository) Delete(id int) error {
 	}
 
 	if rowsAffected == 0 {
-		return errors.New("kitap bulunamadı")
+		return ErrBookNotFound
 	}
 
 	return nil

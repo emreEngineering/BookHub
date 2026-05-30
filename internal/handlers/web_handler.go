@@ -1,8 +1,13 @@
 package handlers
 
 import (
+	"context"
+	"errors"
+
 	"BookHub/internal/activity"
 	"BookHub/internal/models"
+	"BookHub/internal/repositories"
+	"BookHub/internal/requestcontext"
 	"BookHub/internal/responses"
 	"BookHub/internal/services"
 	"html/template"
@@ -17,6 +22,7 @@ type WebHandler struct {
 	activityLogger activity.ActivityLogger
 }
 
+// Constructor
 func NewWebHandler(bookService services.BookServices, userService services.UserService, sessionService services.SessionService, activityLogger activity.ActivityLogger) *WebHandler {
 	return &WebHandler{
 		bookService:    bookService,
@@ -26,13 +32,14 @@ func NewWebHandler(bookService services.BookServices, userService services.UserS
 	}
 }
 
+// Kitapları sayfaya listeler
 func (h *WebHandler) BooksPageHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
+	if r.Method != http.MethodGet { // GET method kontrolü yapar
 		responses.Error(w, http.StatusMethodNotAllowed, "Bu endpoint sadece GET destekler")
 		return
 	}
 
-	books, err := h.bookService.GetAllBooks()
+	books, err := h.bookService.GetAllBooks(r.Context())
 	if err != nil {
 		responses.Error(w, http.StatusInternalServerError, "Kitaplar alınamadı")
 		return
@@ -77,13 +84,13 @@ func (h *WebHandler) LoginPageHandler(w http.ResponseWriter, r *http.Request) {
 			Password: r.FormValue("password"),
 		}
 
-		user, err := h.userService.Login(request)
+		user, err := h.userService.Login(r.Context(), request)
 		if err != nil {
 			h.renderLoginPage(w, err.Error())
 			return
 		}
 
-		sessionID, err := h.sessionService.CreateSession(user.ID)
+		sessionID, err := h.sessionService.CreateSession(r.Context(), user.ID)
 		if err != nil {
 			h.renderLoginPage(w, "Session oluşturulamadı")
 			return
@@ -144,7 +151,7 @@ func (h *WebHandler) RegisterPageHandler(w http.ResponseWriter, r *http.Request)
 			Password: r.FormValue("password"),
 		}
 
-		_, err := h.userService.Register(request)
+		_, err := h.userService.Register(r.Context(), request)
 		if err != nil {
 			h.renderRegisterPage(w, err.Error())
 			return
@@ -190,12 +197,15 @@ func (h *WebHandler) currentUser(r *http.Request) (*models.User, bool) {
 		return nil, false
 	}
 
-	userID, err := h.sessionService.GetUserID(cookie.Value)
-	if err != nil {
-		return nil, false
+	userID, ok := requestcontext.UserID(r.Context())
+	if !ok {
+		userID, err = h.sessionService.GetUserID(r.Context(), cookie.Value)
+		if err != nil {
+			return nil, false
+		}
 	}
 
-	user, err := h.userService.GetUserByID(userID)
+	user, err := h.userService.GetUserByID(r.Context(), userID)
 	if err != nil {
 		return nil, false
 	}
@@ -210,13 +220,20 @@ func (h *WebHandler) LogoutPageHandler(w http.ResponseWriter, r *http.Request) {
 
 	cookie, err := r.Cookie("session_id")
 	if err == nil {
-		h.sessionService.DeleteSession(cookie.Value)
+		userID, _ := h.sessionService.GetUserID(r.Context(), cookie.Value)
+		h.sessionService.DeleteSession(r.Context(), cookie.Value)
+
+		var userIDPtr *int
+		if userID != 0 {
+			userIDPtr = &userID
+		}
+		h.logActivity(r.Context(), "user_logout", "Kullanıcı çıkış yaptı", userIDPtr, nil)
 	}
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_id",
 		Value:    "",
-		Path:     "",
+		Path:     "/",
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   -1,
@@ -242,19 +259,11 @@ func (h *WebHandler) BookCreatePageHandler(w http.ResponseWriter, r *http.Reques
 			Year:   year,
 		}
 
-		createdBook, err := h.bookService.CreateBook(book)
+		_, err = h.bookService.CreateBook(r.Context(), book)
 		if err != nil {
 			h.renderBookFormPage(w, r, err.Error())
 			return
 		}
-
-		currentUser, _ := h.currentUser(r)
-		h.logActivity("book_created", "Kitap oluşturuldu", userIDFromUser(currentUser), map[string]interface{}{
-			"book_id": createdBook.ID,
-			"title":   createdBook.Title,
-			"author":  createdBook.Author,
-			"year":    createdBook.Year,
-		})
 
 		http.Redirect(w, r, "/web/books", http.StatusSeeOther)
 		return
@@ -307,16 +316,15 @@ func (h *WebHandler) BookDeletePageHandler(w http.ResponseWriter, r *http.Reques
 		responses.Error(w, http.StatusBadRequest, "Geçersiz kita ID")
 		return
 	}
-	err = h.bookService.DeleteBook(id)
+	err = h.bookService.DeleteBook(r.Context(), id)
 	if err != nil {
-		responses.Error(w, http.StatusNotFound, "Kitap bulunamadı")
+		if errors.Is(err, repositories.ErrBookNotFound) {
+			responses.Error(w, http.StatusNotFound, "Kitap bulunamadı")
+			return
+		}
+		responses.Error(w, http.StatusInternalServerError, "Kitap silinemedi")
 		return
 	}
-
-	currentUser, _ := h.currentUser(r)
-	h.logActivity("book_deleted", "Kitap silindi", userIDFromUser(currentUser), map[string]interface{}{
-		"book_id": id,
-	})
 
 	http.Redirect(w, r, "/web/books", http.StatusSeeOther)
 }
@@ -334,9 +342,13 @@ func (h *WebHandler) BookEditPageHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	if r.Method == http.MethodGet {
-		book, err := h.bookService.GetBookByID(id)
+		book, err := h.bookService.GetBookByID(r.Context(), id)
 		if err != nil {
-			responses.Error(w, http.StatusNotFound, "Kitap bulunamadı")
+			if errors.Is(err, repositories.ErrBookNotFound) {
+				responses.Error(w, http.StatusNotFound, "Kitap bulunamadı")
+				return
+			}
+			responses.Error(w, http.StatusInternalServerError, "Kitap alınamadı")
 			return
 		}
 		h.renderBookEditPage(w, r, *book, "")
@@ -362,20 +374,12 @@ func (h *WebHandler) BookEditPageHandler(w http.ResponseWriter, r *http.Request)
 			Year:   year,
 		}
 
-		updatedBook, err := h.bookService.UpdateBook(id, book)
+		_, err = h.bookService.UpdateBook(r.Context(), id, book)
 		if err != nil {
 			book.ID = id
 			h.renderBookEditPage(w, r, book, err.Error())
 			return
 		}
-
-		currentUser, _ := h.currentUser(r)
-		h.logActivity("book_updated", "Kitap güncellendi", userIDFromUser(currentUser), map[string]interface{}{
-			"book_id": updatedBook.ID,
-			"title":   updatedBook.Title,
-			"author":  updatedBook.Author,
-			"year":    updatedBook.Year,
-		})
 
 		http.Redirect(w, r, "/web/books", http.StatusSeeOther)
 		return
@@ -411,18 +415,10 @@ func (h *WebHandler) renderBookEditPage(w http.ResponseWriter, r *http.Request, 
 	}
 }
 
-func (h *WebHandler) logActivity(eventType string, message string, userID *int, metadata map[string]interface{}) {
+func (h *WebHandler) logActivity(ctx context.Context, eventType string, message string, userID *int, metadata map[string]interface{}) {
 	if h.activityLogger == nil {
 		return
 	}
 
-	_ = h.activityLogger.Log(eventType, message, userID, metadata)
-}
-
-func userIDFromUser(user *models.User) *int {
-	if user == nil {
-		return nil
-	}
-
-	return &user.ID
+	_ = h.activityLogger.Log(ctx, eventType, message, userID, metadata)
 }

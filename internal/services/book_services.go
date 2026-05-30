@@ -1,54 +1,98 @@
 package services
 
 import (
+	"context"
+	"errors"
+
+	"BookHub/internal/activity"
 	"BookHub/internal/models"
 	"BookHub/internal/repositories"
-	"errors"
+	"BookHub/internal/requestcontext"
 )
 
 type BookServices interface {
-	GetAllBooks() ([]models.Book, error)
-	GetBookByID(id int) (*models.Book, error)
-	CreateBook(book models.Book) (models.Book, error)
-	UpdateBook(id int, book models.Book) (models.Book, error)
-	DeleteBook(id int) error
+	GetAllBooks(ctx context.Context) ([]models.Book, error)
+	GetBookByID(ctx context.Context, id int) (*models.Book, error)
+	CreateBook(ctx context.Context, book models.Book) (models.Book, error)
+	UpdateBook(ctx context.Context, id int, book models.Book) (models.Book, error)
+	DeleteBook(ctx context.Context, id int) error
 }
 
 type DefaultBookService struct {
-	bookRepo repositories.BookRepository
+	bookRepo       repositories.BookRepository
+	activityLogger activity.ActivityLogger
 }
 
-func NewBookService(bookRepo repositories.BookRepository) *DefaultBookService {
-	return &DefaultBookService{
+func NewBookService(bookRepo repositories.BookRepository, activityLoggers ...activity.ActivityLogger) *DefaultBookService {
+	service := &DefaultBookService{
 		bookRepo: bookRepo,
 	}
+
+	if len(activityLoggers) > 0 {
+		service.activityLogger = activityLoggers[0]
+	}
+
+	return service
 }
 
-func (s *DefaultBookService) GetAllBooks() ([]models.Book, error) {
-	return s.bookRepo.FindAll()
+func (s *DefaultBookService) GetAllBooks(ctx context.Context) ([]models.Book, error) {
+	return s.bookRepo.FindAll(ctx)
 }
-func (s *DefaultBookService) GetBookByID(id int) (*models.Book, error) {
-	return s.bookRepo.FindByID(id)
+func (s *DefaultBookService) GetBookByID(ctx context.Context, id int) (*models.Book, error) {
+	return s.bookRepo.FindByID(ctx, id)
 }
-func (s *DefaultBookService) CreateBook(book models.Book) (models.Book, error) {
+func (s *DefaultBookService) CreateBook(ctx context.Context, book models.Book) (models.Book, error) {
 	err := validateBook(book)
 	if err != nil {
 		return models.Book{}, err
 	}
 
-	return s.bookRepo.Create(book)
+	createdBook, err := s.bookRepo.Create(ctx, book)
+	if err != nil {
+		return models.Book{}, err
+	}
+
+	s.logActivity(ctx, "book_created", "Kitap oluşturuldu", map[string]interface{}{
+		"book_id": createdBook.ID,
+		"title":   createdBook.Title,
+		"author":  createdBook.Author,
+		"year":    createdBook.Year,
+	})
+
+	return createdBook, nil
 }
-func (s *DefaultBookService) UpdateBook(id int, book models.Book) (models.Book, error) {
+func (s *DefaultBookService) UpdateBook(ctx context.Context, id int, book models.Book) (models.Book, error) {
 	err := validateBook(book)
 
 	if err != nil {
 		return models.Book{}, err
 	}
-	return s.bookRepo.Update(id, book)
+	updatedBook, err := s.bookRepo.Update(ctx, id, book)
+	if err != nil {
+		return models.Book{}, err
+	}
+
+	s.logActivity(ctx, "book_updated", "Kitap güncellendi", map[string]interface{}{
+		"book_id": updatedBook.ID,
+		"title":   updatedBook.Title,
+		"author":  updatedBook.Author,
+		"year":    updatedBook.Year,
+	})
+
+	return updatedBook, nil
 }
 
-func (s *DefaultBookService) DeleteBook(id int) error {
-	return s.bookRepo.Delete(id)
+func (s *DefaultBookService) DeleteBook(ctx context.Context, id int) error {
+	err := s.bookRepo.Delete(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	s.logActivity(ctx, "book_deleted", "Kitap silindi", map[string]interface{}{
+		"book_id": id,
+	})
+
+	return nil
 }
 
 func validateBook(book models.Book) error {
@@ -60,4 +104,17 @@ func validateBook(book models.Book) error {
 		return errors.New("Yazar adı boş olamaz")
 	}
 	return nil
+}
+
+func (s *DefaultBookService) logActivity(ctx context.Context, eventType string, message string, metadata map[string]interface{}) {
+	if s.activityLogger == nil {
+		return
+	}
+
+	var userIDPtr *int
+	if userID, ok := requestcontext.UserID(ctx); ok {
+		userIDPtr = &userID
+	}
+
+	_ = s.activityLogger.Log(ctx, eventType, message, userIDPtr, metadata)
 }

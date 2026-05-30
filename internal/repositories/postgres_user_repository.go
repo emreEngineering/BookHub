@@ -1,9 +1,13 @@
 package repositories
 
 import (
+	"context"
+
 	"BookHub/internal/models"
 	"database/sql"
 	"errors"
+
+	"github.com/lib/pq"
 )
 
 type PostgresUserRepository struct {
@@ -16,8 +20,8 @@ func NewPostgresUserRepository(db *sql.DB) *PostgresUserRepository {
 	}
 }
 
-func (r *PostgresUserRepository) FindAll() ([]models.User, error) {
-	rows, err := r.db.Query(`
+func (r *PostgresUserRepository) FindAll(ctx context.Context) ([]models.User, error) {
+	rows, err := r.db.QueryContext(ctx, `
 		SELECT id, name, email, password_hash, role
 		FROM users
 		ORDER BY id
@@ -48,10 +52,10 @@ func (r *PostgresUserRepository) FindAll() ([]models.User, error) {
 	return users, nil
 }
 
-func (r *PostgresUserRepository) FindByID(id int) (*models.User, error) {
+func (r *PostgresUserRepository) FindByID(ctx context.Context, id int) (*models.User, error) {
 	var user models.User
 
-	err := r.db.QueryRow(`
+	err := r.db.QueryRowContext(ctx, `
 		SELECT id, name, email, password_hash, role
 		FROM users
 		WHERE id = $1
@@ -59,7 +63,7 @@ func (r *PostgresUserRepository) FindByID(id int) (*models.User, error) {
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errors.New("kullanıcı bulunamadı")
+			return nil, ErrUserNotFound
 		}
 		return nil, err
 	}
@@ -67,10 +71,10 @@ func (r *PostgresUserRepository) FindByID(id int) (*models.User, error) {
 	return &user, nil
 }
 
-func (r *PostgresUserRepository) FindByEmail(email string) (*models.User, error) {
+func (r *PostgresUserRepository) FindByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
 
-	err := r.db.QueryRow(`
+	err := r.db.QueryRowContext(ctx, `
 		SELECT id, name, email, password_hash, role
 		FROM users
 		WHERE email = $1
@@ -78,7 +82,7 @@ func (r *PostgresUserRepository) FindByEmail(email string) (*models.User, error)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errors.New("kullanıcı bulunamadı")
+			return nil, ErrUserNotFound
 		}
 		return nil, err
 	}
@@ -86,18 +90,22 @@ func (r *PostgresUserRepository) FindByEmail(email string) (*models.User, error)
 	return &user, nil
 }
 
-func (r *PostgresUserRepository) Create(user models.User) (models.User, error) {
+func (r *PostgresUserRepository) Create(ctx context.Context, user models.User) (models.User, error) {
 	if user.Role == "" {
 		user.Role = "user"
 	}
 
-	err := r.db.QueryRow(`
+	err := r.db.QueryRowContext(ctx, `
 		INSERT INTO users (name, email, password_hash, role)
 		VALUES ($1, $2, $3, $4)
 		RETURNING id
 	`, user.Name, user.Email, user.PasswordHash, user.Role).Scan(&user.ID)
 
 	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) && pqErr.Code == "23505" {
+			return models.User{}, ErrDuplicateEmail
+		}
 		return models.User{}, err
 	}
 

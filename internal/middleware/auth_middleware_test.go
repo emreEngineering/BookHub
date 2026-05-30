@@ -1,10 +1,13 @@
 package middleware
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"BookHub/internal/requestcontext"
 )
 
 type fakeSessionService struct {
@@ -12,18 +15,18 @@ type fakeSessionService struct {
 	err    error
 }
 
-func (s *fakeSessionService) CreateSession(userID int) (string, error) {
+func (s *fakeSessionService) CreateSession(ctx context.Context, userID int) (string, error) {
 	return "test-session", nil
 }
 
-func (s *fakeSessionService) GetUserID(sessionID string) (int, error) {
+func (s *fakeSessionService) GetUserID(ctx context.Context, sessionID string) (int, error) {
 	if s.err != nil {
 		return 0, s.err
 	}
 	return s.userID, nil
 }
 
-func (s *fakeSessionService) DeleteSession(sessionID string) error {
+func (s *fakeSessionService) DeleteSession(ctx context.Context, sessionID string) error {
 	return nil
 }
 
@@ -33,6 +36,10 @@ func TestAuthMiddleware_RequireAuth_AllowsValidSession(t *testing.T) {
 
 	handler := middleware.RequireAuth(func(w http.ResponseWriter, r *http.Request) {
 		handlerCalled = true
+		userID, ok := requestcontext.UserID(r.Context())
+		if !ok || userID != 42 {
+			t.Fatalf("expected userID 42 in request context, got %d, %v", userID, ok)
+		}
 		w.WriteHeader(http.StatusOK)
 	})
 
