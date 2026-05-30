@@ -191,6 +191,43 @@ curl http://localhost:8080/activity-logs \
 
 Daha detaylı örnekler için [docs/api-examples.md](docs/api-examples.md) dosyasına bakabilirsiniz.
 
+## Öğrenme Sırası
+
+Bu projeyi en verimli şekilde öğrenmek için önce basit HTTP akışını, sonra katmanları, en son dış servisleri okuyun. Her adımda şu soruları sorun: Bu dosyanın tek sorumluluğu ne? Bu katman hangi katmana bağımlı? Bu iş burada mı olmalı, yoksa bir alt veya üst katmanda mı?
+
+1. `/books` API akışını inceleyin.
+   Başlangıç dosyaları: `cmd/server/main.go`, `internal/handlers/book_handler.go`, `internal/responses/response.go`.
+
+2. Domain modellerini okuyun.
+   Başlangıç dosyaları: `internal/models/book.go`, `internal/models/user.go`.
+
+3. Service layer mantığını öğrenin.
+   Başlangıç dosyaları: `internal/services/book_services.go`, `internal/services/user_service.go`.
+
+4. Repository ve SQL katmanına geçin.
+   Başlangıç dosyaları: `internal/repositories/postgres_book_repository.go`, `internal/repositories/postgres_user_repository.go`, `internal/database/database.go`, `internal/database/migrations.go`.
+
+5. `context.Context` akışını takip edin.
+   Akış: `r.Context()` -> service -> repository -> PostgreSQL/Redis/MongoDB.
+
+6. Auth ve session mekanizmasını öğrenin.
+   Başlangıç dosyaları: `internal/handlers/auth_handler.go`, `internal/services/redis_session_service.go`, `internal/middleware/auth_middleware.go`, `internal/requestcontext/user.go`.
+
+7. Web template tarafını inceleyin.
+   Başlangıç dosyaları: `internal/handlers/web_handler.go`, `templates/`.
+
+8. MongoDB activity log yapısını okuyun.
+   Başlangıç dosyaları: `internal/activity/`, `internal/mongodb/mongodb.go`.
+
+9. Async worker, goroutine ve channel kullanımını öğrenin.
+   Başlangıç dosyası: `internal/activity/async_activity_logger.go`.
+
+10. Config ve server startup akışını inceleyin.
+    Başlangıç dosyaları: `internal/config/config.go`, `cmd/server/main.go`.
+
+11. Testleri katman katman okuyun.
+    Başlangıç dosyaları: `internal/services/*_test.go`, `internal/middleware/*_test.go`, `internal/activity/*_test.go`.
+
 ## Testler
 
 Tüm testleri çalıştırma:

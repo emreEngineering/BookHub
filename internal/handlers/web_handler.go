@@ -22,6 +22,7 @@ type WebHandler struct {
 	activityLogger activity.ActivityLogger
 }
 
+// Constructor
 func NewWebHandler(bookService services.BookServices, userService services.UserService, sessionService services.SessionService, activityLogger activity.ActivityLogger) *WebHandler {
 	return &WebHandler{
 		bookService:    bookService,
@@ -31,8 +32,9 @@ func NewWebHandler(bookService services.BookServices, userService services.UserS
 	}
 }
 
+// Kitapları sayfaya listeler
 func (h *WebHandler) BooksPageHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
+	if r.Method != http.MethodGet { // GET method kontrolü yapar
 		responses.Error(w, http.StatusMethodNotAllowed, "Bu endpoint sadece GET destekler")
 		return
 	}

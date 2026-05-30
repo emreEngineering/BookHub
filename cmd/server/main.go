@@ -20,23 +20,32 @@ import (
 	"BookHub/internal/repositories"
 )
 
+// Uygulama açık mı diye temel giriş cevabı
 func homeHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "BookHub çalışıyor")
 }
 
+// servis ayakta mı kontrolü
 func healthHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "OK")
 }
 
+// kısa bir bilgi metni
 func aboutHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "BookHub bir kitap yönetim sistemidir")
 }
 
 func main() {
+
+	// ayarları okuyup tek bir dosya olarak verir
 	cfg := config.Load()
+	// programı aniden kapatmak yerine kontrollü kapatmaya yarar
+	// SIGINT: genelde Ctrl+C
+	// SIGTERM: uygulamayı nazikçe kapat sinyali
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
+	// database'e bağlanır parametre olarak config dosyasındaki DatabesURL'i alır
 	db, err := database.Connect(cfg.DatabaseURL)
 	if err != nil {
 		fmt.Println("Database bağlantısı hatası: ", err)
@@ -44,12 +53,17 @@ func main() {
 	}
 	defer db.Close()
 
+	// migration hata kontrolü
+	// migration: veri tabanı yapısını kontrollü bir şekilde değiştirmek.
 	err = database.Migrate(ctx, db)
 	if err != nil {
 		fmt.Println("Migration hatası:", err)
 		return
 	}
 
+	// Redis'e bağlanmayı sağlar ve hata varsa hata döndürür.
+	// Redis, çok hizlı çalışan bir in- memory deposudur.
+	// genelde geçici veriler saklanır.
 	redisClient, err := redisdb.Connect(ctx, cfg.RedisAddr)
 	if err != nil {
 		fmt.Println("Redis bağlantısı hatası:", err)
@@ -57,6 +71,8 @@ func main() {
 	}
 	defer redisClient.Close()
 
+	// mongoDB'ye bağlanır
+	// mongoDB genelde log kayıtlarını tutar
 	mongoClient, mongoDB, err := mongodb.Connect(ctx, cfg.MongoURI, cfg.MongoDBName)
 	if err != nil {
 		fmt.Println("MongoDB bağlantısı hatası:", err)
@@ -64,9 +80,16 @@ func main() {
 	}
 	defer mongoClient.Disconnect(context.Background())
 
+	// mongoDB veritabanını alır
+	// activity_logs koleksiyonunu kullanacak bir logger oluşturur
+	// sonra sistemdeki hareketleri MongoDB’ye yazmak için bu nesne kullanılır
 	mongoActivityLogger := activity.NewMongoActivityLogService(mongoDB)
+	// logların anında ana akışı yavaşlatmadan, arka planda kaydeder.
+	// 100, log kuyruğunun kapasitesidir. en fazla 100 activity bekler
 	activityLogger := activity.NewAsyncActivityLogger(mongoActivityLogger, 100)
+	// arka planda çalışan workerı başlartır. logları alıp mongodbye yazar
 	activityLogger.Start()
+	// program kapanırken worker düzgün şekilde durur
 	defer activityLogger.Stop()
 
 	activityHandler := handlers.NewActivityHandler(activityLogger)
@@ -115,6 +138,9 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
+	//server arka planda çalışsın
+	//ana goroutine kapanma sinyalini dinlesin
+	//gelince server’ı kontrollü kapatsın
 	go func() {
 		fmt.Println("Server çalışıyor:", serverURL(cfg.ServerAddr))
 		err := server.ListenAndServe()
